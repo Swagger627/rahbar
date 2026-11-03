@@ -196,8 +196,7 @@ Code: `indexer/pipeline/embed.py`.
   has **not been measured here**, because no Ollama model has been run yet (see the test
   results below).
 - **API check (section 4.4):** the indexer writes `embed_model` and `dimension` into the
-  collection metadata. Comparing them with the API's `EMBED_MODEL` at startup is the API's
-  half, and is not built yet.
+  collection metadata, and the API checks them (see "Retrieval and readiness" below).
 
 ### Storage in Chroma
 Code: `indexer/pipeline/store.py`, the only code that writes to Chroma. The API only reads.
@@ -246,6 +245,106 @@ briefly needs room for two copies of the index (398 rows here, which is small).
   - Chroma itself rejected a 768-d vector added to the 4-d collection.
 - **Real Ollama embeddings: PENDING.** Ollama is not installed on this laptop and no
   embedding model has been downloaded, so no real embedding has been produced yet.
+
+## Retrieval and readiness
+Code: `api/app/retrieval/chroma.py`, `api/app/routes/health.py`.
+
+**How a question becomes an embedding.** The API sends the question to the same Ollama
+endpoint the indexer uses (`POST {OLLAMA_URL}/api/embed`), with the same `EMBED_MODEL`. It
+gets back one vector: a list of numbers that stands for the question's meaning. If Ollama
+is down, the model is missing, or the answer is not a list of finite numbers, the request
+fails with a clear message (`/api/ask` answers 503). There is never a fake vector.
+
+**How Chroma finds similar passages.** Every stored chunk has a vector made by the same
+model. Chroma compares the question vector with the stored ones and returns the `k`
+closest (`TOP_K` in the ConfigMap, default 5), closest first, with each chunk's stored
+text and metadata. The API turns each hit into a `Passage`: `chunk_id`, `text`,
+`source`, `section`, `page` and `score`.
+
+**Similarity scores.** Chroma reports cosine *distance* (0 = same direction, larger =
+further apart). The API reports `score = 1 - distance`, so a higher score means a closer
+match, and 1.0 means the vectors point the same way. A score says how close two vectors
+are. It does not prove that the passage answers the question; the relevance floor and
+abstention come in a later step.
+
+**Superseded documents.** Each chunk carries `superseded` (true only for the Aug 2023
+rules) and `doc_version`, both copied from `corpus/raw/_index.json`.
+- An ordinary question searches current documents only (`where superseded = false`), so
+  the 2023 rules can never answer "what is the rule now". This is golden question v01.
+- A question that asks about an older policy or a change searches both editions. It counts
+  as one if it contains a history word (old, older, earlier, former, superseded,
+  outdated, used to, change, changed, compare, comparison, difference, differ), or names
+  the year of a superseded edition. Those years are read from the stored `doc_version`
+  metadata, currently only "2023", and are never typed into the code. An academic-year
+  range such as "2023-24" or "2026-27" does not count, because those name current
+  documents (golden o05, e03). "Previous" is left out on purpose: the injection question i01
+  says "ignore all previous instructions". Of the 16 golden questions, only v02 searches both
+  editions. This is golden question v02.
+- For such a question, the best current and the best superseded passages are merged by
+  score. If one edition is missing from the top `k`, its best passage takes the last
+  place, so a comparison always sees both. Every superseded passage's text starts with
+  `[SUPERSEDED: 2023-08 edition, not the current rule]`, so it can never be mistaken for
+  a current rule.
+- Limitation: this is a keyword rule, not understanding. A question like "what did the
+  rule say back then?" uses none of the words, so it gets current documents only, which
+  is the safe direction. The superseded years are read once per API process, so after a
+  re-index that adds another superseded edition, the API needs a restart to learn its
+  year.
+
+**The embedding pin is checked in three places.**
+1. At startup, the API reads the collection metadata. If `embed_model` differs from its
+   `EMBED_MODEL`, it logs exactly what conflicts ("index check failed; not ready", with
+   both names), and stays not-ready.
+2. On every `/readyz` probe (the same check, so the pod becomes ready once the index is
+   fixed).
+3. On every question: before embedding, the collection's model must match. After
+   embedding, the question vector's length must equal the stored `dimension`. A different
+   model almost always gives a different length.
+
+**/healthz and /readyz.**
+- `/healthz` (liveness) answers "is the process alive?". It never touches Chroma, Redis or
+  the model. If it fails, Kubernetes restarts the container.
+- `/readyz` (readiness) answers "can this pod answer questions right now?". If it fails,
+  Kubernetes stops sending the pod traffic, but does not restart it. With
+  `RETRIEVER=chroma` it returns 200 only if every check passes, in this order: Chroma
+  answers a heartbeat; the collection exists; its `embed_model` equals `EMBED_MODEL`; its
+  `dimension` is a positive whole number; it holds at least one row; and a stored vector
+  really has `dimension` values. When `REDIS_URL` is set, Redis must also answer a ping
+  (the cache does not exist yet, so `REDIS_URL` is not set today). Any failure returns 503
+  with `{"status": "not ready", "reason": ...}` naming the first failed check. The reason
+  names only the exception type, never a URL or password. With `RETRIEVER=stub` it is
+  always ready, so lightweight development needs no index.
+- If Chroma is down, `/readyz` took 3.6 s to answer 503 in our test. That is longer than the
+  probe's default 1 s timeout, so the probe fails, which is the right outcome. A healthy
+  check makes four quick calls to Chroma.
+
+**Test results (2026-11-04).**
+- **Unit tests (38, no Chroma and no Ollama):**
+  - A fake collection that does real cosine maths, and controlled HTTP responses.
+  - Covered: the request sent to Ollama, top-k order and metadata, `1 - distance`,
+    superseded filtering, historical and comparison questions, academic-year ranges
+    staying current, empty results, wrong model, wrong vector length, invalid dimension
+    metadata, missing collection, Chroma down, and five embedding failures.
+  - Through the real app: stub-mode readiness, 503 for each failed check, Redis checked
+    only when set and its password never shown, and `/api/ask` answering 503 when the
+    index is unavailable.
+- **Integration against a temporary real Chroma 1.0.12** (capped at 400 MB, it used about
+  51 MB), holding the 398 real chunks. **The vectors are hash test vectors, not
+  embeddings.** The "question vector" was the hash of a known chunk's text, so the right
+  hit was known:
+  - The target chunk came back first with score 1.0 and the right source, section and page
+    (2026 clause 5.8: p25; 2023 clause 5.8: p17).
+  - An ordinary question never returned a superseded chunk.
+  - The v02-style question returned the 2023 chunk first, labelled SUPERSEDED, with
+    current passages beside it.
+  - A comparison question at `k=2` returned one current and one superseded passage.
+  - The "2026-27" question stayed current-only.
+  - Asking for 60 superseded passages returned all 38 that exist, without error.
+  - `/readyz` gave 200 against the real Chroma. Wrong model, missing collection, empty
+    collection and a dimension mismatch were each reported by name. A stopped Chroma
+    gave "chroma unreachable".
+- **PENDING (needs Ollama):** embedding real questions, and whether the right passages
+  rank first by meaning (recall@5). Nothing here measures retrieval quality.
 
 ## Semantic cache
 Thresholds you tried, the false hit that ruled one out, the one you shipped.

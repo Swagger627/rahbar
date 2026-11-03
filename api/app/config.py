@@ -41,6 +41,10 @@ class Settings:
     hosted_base_url: str = ""        # e.g. an OpenAI-compatible endpoint
     llm_api_key: str = field(default="", repr=False)   # from the Secret; never log it
 
+    # Redis (the semantic cache, section 3.3). Empty means the API does not use Redis
+    # yet, so /readyz does not check it. It may hold a password: never log it.
+    redis_url: str = field(default="", repr=False)
+
     log_level: str = "INFO"
 
 
@@ -58,5 +62,6 @@ def get_settings() -> Settings:
         ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),
         hosted_base_url=os.environ.get("HOSTED_BASE_URL", ""),
         llm_api_key=os.environ.get("LLM_API_KEY", ""),
+        redis_url=os.environ.get("REDIS_URL", ""),
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
     )

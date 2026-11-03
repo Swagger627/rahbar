@@ -32,9 +32,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = settings
     app.state.retriever = get_retriever(settings)
     app.state.provider = get_provider(settings)
-    # STARTER-TODO(4.4): compare the collection's embedding-model metadata with
-    # settings.embed_model here, and make /readyz fail on a mismatch.
+    # The embedding pin (section 4.4): compare the collection's metadata with EMBED_MODEL
+    # now, and log exactly what conflicts. The pod keeps running but /readyz answers 503
+    # (it repeats the same check), so Kubernetes sends it no traffic until it is fixed.
     # This process only reads the index. The indexer Job writes it.
+    from .retrieval.chroma import ChromaRetriever
+
+    if isinstance(app.state.retriever, ChromaRetriever):
+        try:
+            log.info("index check passed", extra=app.state.retriever.check_index())
+        except RuntimeError as exc:
+            log.error("index check failed; not ready", extra={"reason": str(exc),
+                                                             "embed_model": settings.embed_model})
     log.info(
         "api started",
         extra={"retriever": settings.retriever, "llm_provider": settings.llm_provider,

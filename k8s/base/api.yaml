@@ -2,8 +2,9 @@
 # `api` Service. It only READS the index; indexing is the indexer Job's work (4.2).
 #
 # Week 1: the ConfigMap sets RETRIEVER=stub and LLM_PROVIDER=stub.
-# Outstanding: /readyz still always answers "ready" (api/app/routes/health.py). It must
-# check Chroma, the collection and Redis before the real pipeline is switched on.
+# /readyz (api/app/routes/health.py): with RETRIEVER=chroma it answers 503 unless Chroma
+# answers, the collection exists and is not empty, and its embed_model and dimension
+# match. It also checks Redis once REDIS_URL is set. With RETRIEVER=stub it is always ready.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
