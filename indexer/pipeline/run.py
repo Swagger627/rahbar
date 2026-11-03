@@ -2,6 +2,7 @@
 
     python -m pipeline.run --dummy    # week 1: three fake chunks, no model needed
     python -m pipeline.run            # the real pipeline: extract, clean, chunk, embed, store
+    python -m pipeline.run --dry-run  # extract, clean, chunk only; print counts, write nothing
 
 Exit code 0 means the index was written; anything else fails the Job, and
 Kubernetes retries it up to the Job's backoffLimit.
@@ -83,9 +84,41 @@ def run_pipeline(settings: IndexerSettings) -> int:
     return store(all_chunks, vectors, settings)
 
 
+def dry_run(settings: IndexerSettings) -> int:
+    """Extract, clean and chunk every document, log what came out, and stop before the
+    embed and store stages: nothing is written to Chroma. Sizes are counted in words."""
+    from .chunk import chunk
+    from .clean import clean
+    from .extract import extract
+
+    documents = discover(settings.corpus_dir)
+    if not documents:
+        raise SystemExit(f"no documents found in {settings.corpus_dir}")
+    total_chunks = total_doc_words = total_chunk_words = 0
+    for path, doc_version, superseded in documents:
+        doc = clean(extract(str(path), doc_version, superseded))
+        pieces = chunk(doc, settings.chunk_size, settings.chunk_overlap)
+        doc_words = sum(len(page.text.split()) for page in doc.pages)
+        chunk_words = sum(len(c.text.split()) for c in pieces)
+        log("dry-run document", source=path.name, pages=len(doc.pages),
+            ocr_pages=sum(page.ocr for page in doc.pages), words=doc_words, chunks=len(pieces),
+            chunk_words=chunk_words, sections=len({c.section for c in pieces}))
+        total_chunks += len(pieces)
+        total_doc_words += doc_words
+        total_chunk_words += chunk_words
+    # Amplification: how many words the index stores per word of cleaned text. Above 1
+    # because of the overlap and the heading repeated at the top of every chunk.
+    log("dry-run total", documents=len(documents), chunks=total_chunks, words=total_doc_words,
+        chunk_words=total_chunk_words,
+        amplification=round(total_chunk_words / total_doc_words, 2) if total_doc_words else 0)
+    return total_chunks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the RAHBAR index, then exit.")
     parser.add_argument("--dummy", action="store_true", help="write three fake chunks")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="extract, clean and chunk only; print a summary, write nothing")
     args = parser.parse_args()
     settings = get_settings()
     log("indexer starting", dummy=args.dummy, embed_model=settings.embed_model,
@@ -98,6 +131,8 @@ def main() -> int:
             from .store import get_client
 
             count = write_dummy_index(settings, get_client(settings))
+        elif args.dry_run:
+            count = dry_run(settings)
         else:
             count = run_pipeline(settings)
     except NotImplementedError as exc:
