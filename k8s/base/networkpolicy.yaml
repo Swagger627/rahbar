@@ -1,0 +1,186 @@
+# Who may talk to whom inside the rahbar namespace (section 4.7). Kubernetes reads all
+# these policies together: once a pod is selected, only traffic some rule allows gets
+# through. Calico enforces them (minikube start --cni=calico); without Calico they are
+# silently ignored.
+#
+#   ingress-nginx --> ui :8080
+#   ingress-nginx, ui --> api :8000
+#   api, indexer --> chroma :8000
+#   api --> redis :6379
+#   every pod --> DNS (kube-system, port 53)
+#
+# Two label facts the rules rely on (check live with `kubectl get ns --show-labels`):
+#   - Kubernetes gives every namespace the label kubernetes.io/metadata.name: <name>.
+#   - minikube's ingress addon runs its controller in the namespace "ingress-nginx".
+#
+# Later, when a real model is used: the api (generation) and the indexer (embeddings)
+# will need egress to Ollama on the host (port 11434), using the host IP printed by
+# `minikube ssh "grep host.minikube.internal /etc/hosts"` (section 9). A hosted provider
+# would instead need egress to its HTTPS endpoint. Nothing is opened for that yet.
+
+# 1. Deny everything in and out of every pod in the namespace, unless a rule below
+#    allows it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# 2. Every pod may look up names (chroma, redis, ...) through the cluster DNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# 3. The ui accepts connections only from the ingress controller, and may itself
+#    connect only to the api (section 4.7 allows "api from the ui"; a connection needs
+#    the sender's egress and the receiver's ingress to both allow it).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ui
+spec:
+  podSelector:
+    matchLabels:
+      app: ui
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: api
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# 4. The api accepts connections from the ingress controller and the ui, and may itself
+#    connect only to Chroma and Redis.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app: ui
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: chroma
+      ports:
+        - protocol: TCP
+          port: 8000
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+# 5. Chroma accepts connections only from the api and the indexer.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: chroma
+spec:
+  podSelector:
+    matchLabels:
+      app: chroma
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api
+        - podSelector:
+            matchLabels:
+              app: indexer
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# 6. Redis accepts connections only from the api.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+# 7. The indexer (the dummy Job and the reindex CronJob, both labelled app: indexer)
+#    may connect to Chroma.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: indexer
+spec:
+  podSelector:
+    matchLabels:
+      app: indexer
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: chroma
+      ports:
+        - protocol: TCP
+          port: 8000

@@ -52,6 +52,15 @@ spec:
           envFrom:
             - configMapRef:
                 name: rahbar-config
+          # The LLM key for LLM_PROVIDER=hosted, from the Secret created on the command
+          # line (see secret.placeholder.yaml). Optional, so the api starts without it.
+          env:
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rahbar-secret
+                  key: LLM_API_KEY
+                  optional: true
           # The three probes from section 4.3. Liveness and startup use /healthz, which
           # touches no dependency; readiness uses /readyz.
           startupProbe:

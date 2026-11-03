@@ -1,0 +1,22 @@
+# Adds api pods when their average CPU use passes 70% of what each pod requests
+# (100m in api.yaml), between 3 and 8 pods (section 4.1). Needs the metrics-server
+# addon: `minikube addons enable metrics-server`. Without CPU requests the HPA would
+# show <unknown>/70% forever (section 4.5).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

@@ -12,3 +12,8 @@ resources:
   - ui.yaml
   - reindex-cronjob.yaml
   - services.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - networkpolicy.yaml
+# secret.placeholder.yaml is deliberately NOT listed: applying it would replace the
+# real Secret with REPLACE_ME. Create the real one with `kubectl create secret`.
