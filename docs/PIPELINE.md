@@ -58,10 +58,24 @@ Each fee stays next to its description, which is what a question about a fee nee
 wrapped cell ("Semester Freeze Fee" plus its note) splits across lines, but it stays in
 order.
 
+Tick-mark tables needed one targeted fix. In the annual report's "programs by campus" table
+(pp 11-12), a plain-text row read "5 Bachelor of Science (Civil Engineering) √", so the
+column the tick sat in, which is the campus, was lost. `_name_ticks()` replaces each tick
+with the column heading printed directly above it (within 20 points horizontally). A tick
+with no heading above it is left as it is, so nothing is guessed. Before and after:
+
+```
+before: 3 Bachelor of Science (Artificial Intelligence) √ √ √ √
+after:  3 Bachelor of Science (Artificial Intelligence) CFD ISB KHI PWR
+before: 5 Bachelor of Science (Civil Engineering) √
+after:  5 Bachelor of Science (Civil Engineering) LHR
+```
+
+All 80 ticks on the two pages were named, and none was left over. All 11 bachelor's rows
+were compared with the rendered page and match. The rows of p11 and p12 end up in one
+305-token chunk under "Chapter-1 Programs Offered and Campuses".
+
 What could not be recovered:
-- Tick-mark matrices lose their columns. In the annual report's "programs by campus" table,
-  a row becomes "5 Bachelor of Science (Civil Engineering) √", and which campus the tick
-  belongs to (LHR, checked on the rendered page) is lost.
 - Superscripts split off. The refund schedule's "10th day" comes out as "th" on one line
   and "Upto 10 day of commencement of classes" on the next.
 - The scanned policy's application forms (pp 4-8) OCR with checkbox noise ("O Recommended
@@ -94,26 +108,29 @@ document's pages, they would be removed. No such case was seen in this corpus.
 ## Chunking
 Code: `indexer/pipeline/chunk.py`.
 
-**The unit is words, not model tokens.** Size and overlap count whitespace-separated words,
-because words are easy to count and to explain. An embedding model counts subword tokens,
-roughly 1.3 per English word, so a 400-word chunk is about 520 tokens. That estimate is a
-rule of thumb, not a measurement. The ConfigMap values `CHUNK_SIZE` and `CHUNK_OVERLAP` are
-read as words.
+**Unit: tokens, where one token is one whitespace-separated word** (`text.split()`). The
+assignment measures size, overlap and amplification in tokens, and the starter asks us to
+say which kind. These are whitespace tokens, NOT the embedding model's subword tokens. A
+model tokenizer splits text into more pieces (roughly 1.3 per English word, a rule of
+thumb, not a measurement here). Whitespace tokens need no tokenizer library and anyone can
+recount them. `CHUNK_SIZE` and `CHUNK_OVERLAP` in the ConfigMap use this unit, and the
+ConfigMap comment says so.
 
 How it splits, in order:
-1. **Sections.** A line is a heading if it is short (10 words or fewer, 80 characters or
+1. **Sections.** A line is a heading if it is short (10 tokens or fewer, 80 characters or
    fewer), does not end in `. , ; :` and is not a table-of-contents line (`...`), and is one
    of the following: a Markdown `#` heading, a numbered title ("4. Eligibility criteria for a
    technical start-up", "B. Fee Refund Policy"), a chapter line ("Chapter-1 Programs Offered
-   and Campuses"), an ALL-CAPS line of 2 or more words ("CODE OF CONDUCT"), or a Title-Case
-   line followed by a numbered clause ("Repeating a Course" then "5.8 ..."). A section
-   continues across pages until the next heading.
+   and Campuses"), an ALL-CAPS line of 2 or more words with at least one word longer than 3
+   letters ("CODE OF CONDUCT", but not the table header "CFD ISB KHI LHR PWR"), or a
+   Title-Case line followed by a numbered clause ("Repeating a Course" then "5.8 ..."). A
+   section continues across pages until the next heading.
 2. **Paragraphs** end at a blank line, at a new clause ("5.8 ...", "1.2.1. ...") or list item
    ("a.", "iv)"), and at the end of a page, so a paragraph's page number is exact.
-3. **Packing.** Paragraphs fill a chunk up to `size` words, never mixing two sections or two
+3. **Packing.** Paragraphs fill a chunk up to `size` tokens, never mixing two sections or two
    documents. A paragraph longer than `size` is split at sentence ends, and a sentence that
-   is still too long is cut every `size` words.
-4. **Overlap.** Each new chunk in the same section starts with the last `overlap` words of
+   is still too long is cut every `size` tokens.
+4. **Overlap.** Each new chunk in the same section starts with the last `overlap` tokens of
    the previous one. The overlap is shortened when needed, so a chunk body never exceeds
    `size`. There is no overlap across a section boundary.
 5. **Text and metadata.** The chunk text is the heading line, then the body, so a retrieved
@@ -122,19 +139,20 @@ How it splits, in order:
    IDs are stable: `<file stem>-<4-digit number>`, for example
    `academic-rules-handbook-jun-2026-0032`.
 
-**Shipped: size 400 words, overlap 50 words** (ConfigMap `rahbar-config`).
+**Shipped: size 400 tokens, overlap 50 tokens** (ConfigMap `rahbar-config`).
 
-Measured on the full corpus (7 PDFs, 247 pages, 58,801 words after cleaning) inside the
-indexer image. Storage amplification is stored words divided by cleaned words. Stored words
-include the overlap and the heading line repeated on every chunk.
+Measured on the full corpus (7 PDFs, 247 pages, 58,801 tokens after cleaning) inside the
+indexer image on 2026-11-04, after the tick-table and table-header fixes. Storage
+amplification is stored tokens divided by original (cleaned) tokens. Stored tokens include
+the overlap and the heading line repeated on every chunk.
 
-| Size (words) | Overlap (words) | recall@5 | Chunks stored | Amplification | Median chunk (words) |
+| Size (tokens) | Overlap (tokens) | recall@5 | Chunks stored | Amplification | Median chunk (tokens) |
 | --- | --- | --- | --- | --- | --- |
-| 200 | 25 | not measured yet | 537 | 1.10 | 132 |
-| 400 | 50 | not measured yet | 405 | 1.07 | 100 |
-| 800 | 100 | not measured yet | 358 | 1.06 | 87 |
+| 200 | 25 | not measured yet | 531 | 1.10 | 133 |
+| 400 | 50 | not measured yet | 398 | 1.07 | 107 |
+| 800 | 100 | not measured yet | 351 | 1.06 | 87 |
 
-recall@5 needs embeddings and retrieval (Steps 3.1B and 3.3). It will be filled in from
+recall@5 needs real embeddings and retrieval (Step 3.3). It will be filled in from
 `eval/run_eval.py` then.
 
 Why amplification is low and the median chunk is small: most sections in these documents
@@ -149,12 +167,85 @@ Section check against the golden set: all 15 `(source, section)` pairs in
 punctuation and quotes ignored), including the two from OCR documents. This shows the
 sections exist. It is not a retrieval score.
 
-Seen weaknesses: a few table header rows are caught as ALL-CAPS headings (the annual
-report's campus row "CFD ISB KHI LHR PWR"). Text before a document's first heading (cover
-pages) goes into a section named "Untitled section": 6 chunks in the whole corpus.
+Seen weaknesses: text before a document's first heading (cover pages) goes into a section
+named "Untitled section", 7 chunks in the whole corpus. A table row that starts like a
+numbered title can still become a heading, e.g. on annual report p71: "13. Doctor of
+Philosophy (Civil Engineering) LHR Sanctioned".
 
 ## Embedding
-Model, vector dimension, where the pin lives, how the API checks it.
+Code: `indexer/pipeline/embed.py`.
+
+- **Model:** whatever `EMBED_MODEL` says. The pin lives in one place, the ConfigMap
+  `rahbar-config`, which both the indexer and the API read. The intended model is
+  `nomic-embed-text` on Ollama (the code default). The ConfigMap still holds `dummy-768`
+  from the week-1 dummy index, and must be changed to the real model before the real
+  indexer runs. The real pipeline refuses `dummy-768` with a clear error, so a fake model
+  name can never produce a "real" index.
+- **Call:** `POST {OLLAMA_URL}/api/embed` with `{"model": EMBED_MODEL, "input": [16 chunk
+  texts], "truncate": false}`, 16 chunks per request (398 chunks take 25 requests). The
+  timeout is 120 s per request, because the first call also loads the model, with 10 s to
+  connect, so a missing Ollama fails fast. `truncate: false` makes a chunk that is too long
+  for the model an error, instead of being silently cut.
+- **Checks:** every request must return exactly one vector per text sent. Every vector must
+  be a non-empty list of finite numbers, and all vectors must have the same length as the
+  first one. Any failure (Ollama down, model not pulled, HTTP error, malformed JSON, wrong
+  count, wrong or mixed dimension) stops the run with a message naming the chunks, the
+  model and the URL. The Job then exits 1. There is no fallback to fake vectors.
+- **Vector dimension:** not hard-coded. The indexer records the length of the vectors the
+  model actually returned. `nomic-embed-text` is documented as 768-dimensional, but that
+  has **not been measured here**, because no Ollama model has been run yet (see the test
+  results below).
+- **API check (section 4.4):** the indexer writes `embed_model` and `dimension` into the
+  collection metadata. Comparing them with the API's `EMBED_MODEL` at startup is the API's
+  half, and is not built yet.
+
+### Storage in Chroma
+Code: `indexer/pipeline/store.py`, the only code that writes to Chroma. The API only reads.
+
+- One row per chunk: `id` (the stable chunk id), `document` (chunk text), `embedding`, and
+  `metadata` = `source`, `section`, `page`, `doc_version`, `superseded`. The `superseded`
+  flag is a real boolean, so the retriever can filter with `where={"superseded": False}`.
+- Collection metadata: `{"hnsw:space": "cosine", "embed_model": <EMBED_MODEL>,
+  "dimension": <actual vector length>}`.
+
+### Re-indexing
+Every run builds a complete new index beside the old one, then swaps it in:
+1. Delete any `rahbar-staging` collection left by a crashed run, then create a fresh one.
+2. Write all chunks into `rahbar-staging`, 100 rows per `add()`.
+3. Check that `rahbar-staging` holds exactly one row per chunk. If not, delete it and stop:
+   the old `rahbar` collection was never touched.
+4. Delete the old `rahbar` and rename `rahbar-staging` to `rahbar`.
+
+This makes repeated runs safe: there are no duplicate rows, and no rows left over from
+deleted chunks. Vectors from two models can never share a collection, because each run
+starts a brand-new collection, and Chroma itself rejects a vector of the wrong dimension.
+Bad input (no chunks, a count mismatch, duplicate ids, mixed dimensions) is refused before
+Chroma is touched.
+
+Limitation: between the delete and the rename in step 4 (milliseconds), no `rahbar`
+collection exists, so a question asked in exactly that instant fails once. Staging also
+briefly needs room for two copies of the index (398 rows here, which is small).
+
+### Test results (2026-11-04)
+- Unit tests with controlled HTTP responses (no Ollama): batching, the configured model and
+  URL, Ollama down, model not pulled (HTTP 404), 8 malformed-response cases, mixed
+  dimensions across batches, dummy model refused. These vectors are test data, not
+  embeddings.
+- Unit tests with a fake Chroma client: metadata, repeated indexing, model change, leftover
+  staging, a failed write keeping the old index, bad input.
+- Integration against a temporary real Chroma 1.0.12 container (memory capped at 400 MB;
+  it used 54 MB). The 398 real corpus chunks were stored with **controlled test vectors
+  (hash-based, not embeddings)**:
+  - 398 rows were written in 0.9 s, and the metadata read back intact (e.g. 2023 clause 5.8:
+    `Repeating a Course`, p17, `superseded: True`).
+  - A second run still held 398 rows, in one collection.
+  - The `superseded=False` filter returned only non-superseded chunks.
+  - Bad input left the old index unchanged.
+  - A model change (768 to 4 dimensions) with a leftover staging collection ended with one
+    collection holding only 4-d vectors and the new model in its metadata.
+  - Chroma itself rejected a 768-d vector added to the 4-d collection.
+- **Real Ollama embeddings: PENDING.** Ollama is not installed on this laptop and no
+  embedding model has been downloaded, so no real embedding has been produced yet.
 
 ## Semantic cache
 Thresholds you tried, the false hit that ruled one out, the one you shipped.

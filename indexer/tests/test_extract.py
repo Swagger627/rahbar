@@ -81,3 +81,42 @@ def test_broken_pdf_names_the_file(tmp_path: Path) -> None:
     broken.write_bytes(b"this is not a pdf")
     with pytest.raises(ValueError, match="broken.pdf: could not extract text"):
         ex.extract(str(broken), "1", False)
+
+
+class FakeTickPage:
+    """Just enough of a pdfplumber page for _name_ticks: a heading row CFD/ISB/LHR, and
+    one table row with ticks under CFD and LHR."""
+
+    def __init__(self) -> None:
+        def char(text: str, x0: float) -> dict[str, object]:
+            return {"text": text, "x0": x0, "x1": x0 + 6, "top": 120}
+
+        self.row = [char("5", 10), char("√", 101), char("√", 181)]
+        self.chars = self.row
+        self.headings = [{"text": "CFD", "x0": 95, "x1": 113, "bottom": 100},
+                         {"text": "ISB", "x0": 135, "x1": 153, "bottom": 100},
+                         {"text": "LHR", "x0": 175, "x1": 193, "bottom": 100}]
+
+    def extract_words(self) -> list[dict[str, object]]:
+        return self.headings
+
+    def extract_text_lines(self, **kwargs: object) -> list[dict[str, object]]:
+        return [{"text": "5 √ √", "chars": self.row}]
+
+
+def test_ticks_become_the_column_heading_above_them() -> None:
+    text = "CFD ISB LHR\n5 Bachelor of Science (Civil Engineering) √ √"
+    assert ex._name_ticks(FakeTickPage(), text).splitlines()[1] == (
+        "5 Bachelor of Science (Civil Engineering) CFD LHR")
+
+
+def test_a_tick_with_no_heading_above_is_left_alone() -> None:
+    page = FakeTickPage()
+    page.headings = [page.headings[0]]           # only CFD is printed
+    assert ex._name_ticks(page, "5 x √ √").endswith("x CFD √")
+
+
+def test_pages_without_ticks_are_unchanged() -> None:
+    page = FakeTickPage()
+    page.chars = [{"text": "a", "x0": 1, "x1": 2, "top": 3}]
+    assert ex._name_ticks(page, "plain text") == "plain text"

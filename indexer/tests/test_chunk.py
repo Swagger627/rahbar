@@ -33,6 +33,12 @@ def test_all_caps_and_markdown_headings() -> None:
     assert [c.section for c in chunk(doc, 400, 50)] == ["Grade Points", "CODE OF CONDUCT"]
 
 
+def test_a_row_of_short_codes_is_a_table_header_not_a_heading() -> None:
+    doc = make_doc(["Chapter-1 Programs Offered and Campuses\nCFD ISB KHI LHR PWR\n"
+                    "5 Bachelor of Science (Civil Engineering) LHR"])
+    assert [c.section for c in chunk(doc, 400, 50)] == ["Chapter-1 Programs Offered and Campuses"]
+
+
 def test_ordinary_lines_and_clauses_are_not_headings() -> None:
     doc = make_doc(["Attendance Requirements\n4.1 Students must attend 80% of classes.\n"
                     "This rule applies to all students.\nFees are listed below:"])

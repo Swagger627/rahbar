@@ -81,12 +81,15 @@ def run_pipeline(settings: IndexerSettings) -> int:
         log("chunked", source=path.name, chunks=len(pieces))
         all_chunks.extend(pieces)
     vectors = embed([c.text for c in all_chunks], settings)
+    log("embedded", chunks=len(vectors), model=settings.embed_model,
+        dimension=len(vectors[0]) if vectors else 0)
     return store(all_chunks, vectors, settings)
 
 
 def dry_run(settings: IndexerSettings) -> int:
     """Extract, clean and chunk every document, log what came out, and stop before the
-    embed and store stages: nothing is written to Chroma. Sizes are counted in words."""
+    embed and store stages: nothing is written to Chroma. Sizes are in tokens
+    (whitespace words)."""
     from .chunk import chunk
     from .clean import clean
     from .extract import extract
@@ -94,23 +97,23 @@ def dry_run(settings: IndexerSettings) -> int:
     documents = discover(settings.corpus_dir)
     if not documents:
         raise SystemExit(f"no documents found in {settings.corpus_dir}")
-    total_chunks = total_doc_words = total_chunk_words = 0
+    total_chunks = total_doc_tokens = total_chunk_tokens = 0
     for path, doc_version, superseded in documents:
         doc = clean(extract(str(path), doc_version, superseded))
         pieces = chunk(doc, settings.chunk_size, settings.chunk_overlap)
-        doc_words = sum(len(page.text.split()) for page in doc.pages)
-        chunk_words = sum(len(c.text.split()) for c in pieces)
+        doc_tokens = sum(len(page.text.split()) for page in doc.pages)
+        chunk_tokens = sum(len(c.text.split()) for c in pieces)
         log("dry-run document", source=path.name, pages=len(doc.pages),
-            ocr_pages=sum(page.ocr for page in doc.pages), words=doc_words, chunks=len(pieces),
-            chunk_words=chunk_words, sections=len({c.section for c in pieces}))
+            ocr_pages=sum(page.ocr for page in doc.pages), tokens=doc_tokens, chunks=len(pieces),
+            chunk_tokens=chunk_tokens, sections=len({c.section for c in pieces}))
         total_chunks += len(pieces)
-        total_doc_words += doc_words
-        total_chunk_words += chunk_words
-    # Amplification: how many words the index stores per word of cleaned text. Above 1
+        total_doc_tokens += doc_tokens
+        total_chunk_tokens += chunk_tokens
+    # Amplification: stored tokens divided by original (cleaned) tokens. Above 1
     # because of the overlap and the heading repeated at the top of every chunk.
-    log("dry-run total", documents=len(documents), chunks=total_chunks, words=total_doc_words,
-        chunk_words=total_chunk_words,
-        amplification=round(total_chunk_words / total_doc_words, 2) if total_doc_words else 0)
+    log("dry-run total", documents=len(documents), chunks=total_chunks, tokens=total_doc_tokens,
+        chunk_tokens=total_chunk_tokens,
+        amplification=round(total_chunk_tokens / total_doc_tokens, 2) if total_doc_tokens else 0)
     return total_chunks
 
 
@@ -135,9 +138,9 @@ def main() -> int:
             count = dry_run(settings)
         else:
             count = run_pipeline(settings)
-    except NotImplementedError as exc:
-        log("indexer stage not implemented yet", error=str(exc))
-        return 2
+    except RuntimeError as exc:   # embed or store refused: say why, fail the Job
+        log("indexer failed", error=str(exc))
+        return 1
     log("indexer finished", chunks=count, seconds=round(time.perf_counter() - started, 1))
     return 0
 

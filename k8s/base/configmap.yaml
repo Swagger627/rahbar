@@ -23,7 +23,8 @@ data:
   # Low temperature because answers must be factual and valid JSON; 0.2 still lets
   # the model phrase an answer naturally.
   TEMPERATURE: "0.2"
-  # Chunking, in tokens (section 3.1); the shipped values come from our experiment.
+  # Chunking (section 3.1), in tokens = whitespace-separated words, not the embedding
+  # model's subword tokens. The shipped values come from our experiment.
   CHUNK_SIZE: "400"
   CHUNK_OVERLAP: "50"
   LOG_LEVEL: "INFO"

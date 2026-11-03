@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from .models import Document, Page
 
@@ -13,6 +14,8 @@ OCR_DPI = 300   # tesseract reads small print well at 300 dots per inch
 # Page segmentation mode 4 reads the page as one column of lines. The default (3) treated
 # the scanned policy's clause numbers ("4.2.") as a separate column and lost them.
 OCR_CONFIG = "--psm 4"
+TICKS = "√✓✔"
+TICK_COLUMN_WIDTH = 20   # points: how far a tick may sit from the centre of its heading
 
 
 def extract(path: str, doc_version: str, superseded: bool) -> Document:
@@ -46,7 +49,7 @@ def _extract_pdf(file: Path) -> list[Page]:
                 # PDF's own reading order, so two-column pages are read column by
                 # column instead of mixing both columns on one line.
                 visible = pdf_page.within_bbox(pdf_page.bbox)
-                text = visible.extract_text(use_text_flow=True) or ""
+                text = _name_ticks(visible, visible.extract_text(use_text_flow=True) or "")
                 if _letters(text) >= MIN_LETTERS_FOR_TEXT_LAYER:
                     pages.append(Page(source=file.name, page=number, text=text))
                 else:
@@ -55,6 +58,36 @@ def _extract_pdf(file: Path) -> list[Page]:
     except Exception as exc:   # a damaged or encrypted PDF: say which file, keep the cause
         raise ValueError(f"{file.name}: could not extract text: {exc}") from exc
     return pages
+
+
+def _name_ticks(page: Any, text: str) -> str:
+    """Tick-mark tables ("√" under column headings such as CFD ISB KHI LHR PWR) lose their
+    columns in plain text: "5 Bachelor of Science (Civil Engineering) √" no longer says
+    which campus. Replace each tick with the heading printed straight above it, giving
+    "5 Bachelor of Science (Civil Engineering) LHR". A tick with no heading within
+    TICK_COLUMN_WIDTH points above it is left as it is; nothing is guessed."""
+    ticks = [c for c in page.chars if c["text"] in TICKS]
+    if not ticks:
+        return text
+    first_tick = min(c["top"] for c in ticks)
+    headings = [w for w in page.extract_words() if w["bottom"] <= first_tick and w["text"].isupper()]
+
+    def column(tick: dict[str, Any]) -> str:
+        x = (tick["x0"] + tick["x1"]) / 2
+        above = [w for w in headings if abs((w["x0"] + w["x1"]) / 2 - x) <= TICK_COLUMN_WIDTH]
+        return max(above, key=lambda w: w["bottom"])["text"] if above else tick["text"]
+
+    # The column names for each line that has ticks, in the same reading order as `text`.
+    rows = [[column(c) for c in line["chars"] if c["text"] in TICKS]
+            for line in page.extract_text_lines(use_text_flow=True, return_chars=True)
+            if any(c["text"] in TICKS for c in line["chars"])]
+    lines = []
+    for line in text.splitlines():
+        if rows and any(t in line for t in TICKS):
+            names = iter(rows.pop(0))
+            line = "".join(next(names, ch) if ch in TICKS else ch for ch in line)
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _ocr_page(file: Path, number: int) -> str:

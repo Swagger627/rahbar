@@ -1,8 +1,9 @@
 """Stage 3: Chunk. Structure-aware, with overlap.
 
-Size and overlap are counted in WORDS (text split on whitespace), not in model tokens:
-words are easy to count and to explain. One English word is roughly 1.3 model tokens,
-so a 400-word chunk is about 520 tokens, well inside the embedding model's limit.
+Size and overlap are counted in tokens, and a token here is one whitespace-separated
+word (`text.split()`). These are NOT the embedding model's subword tokens, which run
+somewhat higher (a rule of thumb is about 1.3 per English word). Whitespace tokens are
+easy to count and to explain, and need no tokenizer library.
 """
 
 from __future__ import annotations
@@ -23,8 +24,9 @@ SMALL_WORDS = {"a", "an", "and", "as", "at", "by", "for", "from", "in", "of", "o
 
 def chunk(doc: Document, size: int, overlap: int) -> list[Chunk]:
     """Split on sections, then paragraphs, then sentences, keeping each chunk's body to
-    at most `size` words, with `overlap` words shared between neighbours in the same
-    section. Every chunk keeps its section heading, page, doc_version and superseded."""
+    at most `size` tokens (whitespace words), with `overlap` tokens shared between
+    neighbours in the same section. Every chunk keeps its section heading, page,
+    doc_version and superseded."""
     if size < 1 or not 0 <= overlap < size:
         raise ValueError(f"need size >= 1 and 0 <= overlap < size, got {size}, {overlap}")
     chunks: list[Chunk] = []
@@ -92,15 +94,17 @@ def _is_heading(line: str, next_line: str) -> bool:
     if any(ch.isdigit() for ch in line):
         return False
     letters = [ch for ch in line if ch.isalpha()]
-    if len(words) >= 2 and letters and all(ch.isupper() for ch in letters):
-        return True                                   # "CODE OF CONDUCT"
+    if letters and all(ch.isupper() for ch in letters):
+        # "CODE OF CONDUCT" is a heading; a row of short codes such as the campus header
+        # "CFD ISB KHI LHR PWR" is a table header, not a heading.
+        return len(words) >= 2 and any(len(w) > 3 for w in words)
     title_case = all(w[0].isupper() or w.lower() in SMALL_WORDS for w in words if w[0].isalpha())
     return title_case and bool(CLAUSE.match(next_line))   # "Repeating a Course" + "5.8 ..."
 
 
 def _pack(paragraphs: list[tuple[int, str]], size: int, overlap: int) -> list[tuple[int, list[str]]]:
-    """Fill chunks paragraph by paragraph up to `size` words. A new chunk starts with the
-    last `overlap` words of the previous one; its page is where its new text starts."""
+    """Fill chunks paragraph by paragraph up to `size` tokens. A new chunk starts with the
+    last `overlap` tokens of the previous one; its page is where its new text starts."""
     pieces = [(page, part) for page, text in paragraphs for part in _split_long(text, size)]
     chunks: list[tuple[int, list[str]]] = []
     words: list[str] = []
@@ -121,8 +125,8 @@ def _pack(paragraphs: list[tuple[int, str]], size: int, overlap: int) -> list[tu
 
 
 def _split_long(text: str, size: int) -> list[str]:
-    """A paragraph longer than `size` words is split at sentence ends; a sentence that is
-    still too long is cut every `size` words."""
+    """A paragraph longer than `size` tokens is split at sentence ends; a sentence that is
+    still too long is cut every `size` tokens."""
     if len(text.split()) <= size:
         return [text]
     parts: list[str] = []
