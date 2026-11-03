@@ -35,6 +35,12 @@ def test_spaces_ligatures_and_letter_spacing_are_tidied() -> None:
     assert cleaned == "Use of AI tools\nThe final grade\ntutorials are optional"
 
 
+def test_contents_dot_leaders_are_shortened() -> None:
+    text = "CODE OF CONDUCT" + "." * 120 + "13\nGrading . . . . . . 7\nWait... what"
+    cleaned = clean(make_doc([text])).pages[0].text
+    assert cleaned == "CODE OF CONDUCT ... 13\nGrading ... 7\nWait... what"
+
+
 def test_blank_lines_are_collapsed_but_paragraphs_kept() -> None:
     cleaned = clean(make_doc(["First paragraph\n\n\n\n\nSecond paragraph"])).pages[0].text
     assert cleaned == "First paragraph\n\nSecond paragraph"

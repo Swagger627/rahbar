@@ -16,6 +16,11 @@ MIN_PAGES_REPEATED = 3
 
 PAGE_NUMBER = re.compile(r"^(page\s+)?\d+(\s+of\s+\d+)?$", re.IGNORECASE)   # "18", "Page 11 of 85"
 LETTER_SPACED = re.compile(r"\b(?:[A-Za-z] ){3,}[A-Za-z]\b")                 # "t u t o r i a l s"
+# Table-of-contents dot leaders ("CODE OF CONDUCT.........13"). Left alone, one such line
+# is hundreds of model tokens, and the annual report's contents page alone overflowed
+# nomic-embed-text's 2048-token context. Shortened to " ... ", which the chunker still
+# recognises as a contents line.
+DOT_LEADER = re.compile(r"(?:\.\s*){4,}")
 
 
 def clean(doc: Document) -> Document:
@@ -35,8 +40,9 @@ def clean(doc: Document) -> Document:
 
 def _tidy(line: str) -> str:
     """Normalise one line: Unicode compatibility forms (the "ﬁ" ligature becomes "fi"),
-    one space between words, letter-spaced words joined again."""
+    one space between words, dot leaders shortened, letter-spaced words joined again."""
     line = unicodedata.normalize("NFKC", line)
+    line = DOT_LEADER.sub(" ... ", line)
     line = re.sub(r"[ \t ]+", " ", line).strip()
     return LETTER_SPACED.sub(lambda m: m.group(0).replace(" ", ""), line)
 

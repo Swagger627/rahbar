@@ -93,6 +93,14 @@ Code: `indexer/pipeline/clean.py`. The rules, in order:
    EMERGING SCIENCES" (53 of 58 pages of the 2026 handbook), "Student Handbook 2026 17",
    "Page 3 of 85".
 6. Three or more blank lines collapse to one blank line.
+7. Table-of-contents dot leaders (4 or more dots, "CODE OF CONDUCT.........13") shorten to
+   " ... ". This was found on 2026-11-04 by the first real embedding run. The annual
+   report's contents chunk was one 4,023-character run of dots, which broke into more than
+   2,048 model tokens, and Ollama refused it ("the input length exceeds the context
+   length"). The " ... " still marks the line as a contents line for the chunker. The OCR'd
+   contents page of the 2023 rules is different: tesseract read its dots as letters
+   ("ecceceeceees..."), which no rule can safely remove. That chunk is noise, but it fits
+   the model (1,409 tokens).
 
 Deliberately not stripped:
 - Headings. "CODE OF CONDUCT" or "Repeating a Course" appear on only one or two pages, so
@@ -111,9 +119,11 @@ Code: `indexer/pipeline/chunk.py`.
 **Unit: tokens, where one token is one whitespace-separated word** (`text.split()`). The
 assignment measures size, overlap and amplification in tokens, and the starter asks us to
 say which kind. These are whitespace tokens, NOT the embedding model's subword tokens. A
-model tokenizer splits text into more pieces (roughly 1.3 per English word, a rule of
-thumb, not a measurement here). Whitespace tokens need no tokenizer library and anyone can
-recount them. `CHUNK_SIZE` and `CHUNK_OVERLAP` in the ConfigMap use this unit, and the
+model tokenizer splits text into more pieces. Measured with nomic-embed-text's own
+tokenizer (Ollama's `prompt_eval_count`) over all 398 chunks: **1.34 model tokens per
+whitespace token**. The largest chunk is 1,409 model tokens (the OCR noise above), the
+median 134, and everything else is at most 625, all inside the model's 2,048-token
+context. Whitespace tokens need no tokenizer library and anyone can recount them. `CHUNK_SIZE` and `CHUNK_OVERLAP` in the ConfigMap use this unit, and the
 ConfigMap comment says so.
 
 How it splits, in order:
@@ -141,19 +151,31 @@ How it splits, in order:
 
 **Shipped: size 400 tokens, overlap 50 tokens** (ConfigMap `rahbar-config`).
 
-Measured on the full corpus (7 PDFs, 247 pages, 58,801 tokens after cleaning) inside the
-indexer image on 2026-11-04, after the tick-table and table-header fixes. Storage
-amplification is stored tokens divided by original (cleaned) tokens. Stored tokens include
-the overlap and the heading line repeated on every chunk.
+Measured on the full corpus (7 PDFs, 247 pages, 58,886 tokens after cleaning) on
+2026-11-04, with the dot-leader rule. Chunks come from the indexer image (real OCR).
+recall@3 and recall@5 come from the real API retriever, with real nomic-embed-text vectors
+in a temporary Chroma, over the 14 golden questions that have relevant passages (macro
+average, computed with `eval/run_eval.py`'s `recall_at_k`). Storage amplification is
+stored tokens divided by original (cleaned) tokens; stored tokens include the overlap and
+the heading line repeated on every chunk.
 
-| Size (tokens) | Overlap (tokens) | recall@5 | Chunks stored | Amplification | Median chunk (tokens) |
-| --- | --- | --- | --- | --- | --- |
-| 200 | 25 | not measured yet | 531 | 1.10 | 133 |
-| 400 | 50 | not measured yet | 398 | 1.07 | 107 |
-| 800 | 100 | not measured yet | 351 | 1.06 | 87 |
+| Size (tokens) | Overlap (tokens) | recall@3 | recall@5 | Chunks stored | Amplification | Median chunk (tokens) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 200 | 25 | 0.786 | 0.857 | 532 | 1.10 | 134 |
+| 400 | 50 | **0.857** | **0.857** | 398 | 1.07 | 107 |
+| 800 | 100 | 0.786 | 0.786 | 351 | 1.06 | 87 |
 
-recall@5 needs real embeddings and retrieval (Step 3.3). It will be filled in from
-`eval/run_eval.py` then.
+**Why 400/50 is shipped:** it has the best recall@3 and ties for the best recall@5.
+- 800/100 also loses o07: the Generative-AI "Acceptable Uses" passage gets merged into
+  larger chunks.
+- 200/25 ranks the right passage lower (recall@3 0.786) and stores 34% more chunks.
+- With 14 questions, one question is worth 0.071, so these differences are small. They are
+  evidence for 400/50, not proof.
+- All three settings miss the same two questions (o05, e01; see "Real retrieval results").
+  Chunk size is not their cause.
+
+These are retrieval-only numbers (the top 5 passages the retriever returns). The full eval
+through `/api/ask`, with real answers, is the next step.
 
 Why amplification is low and the median chunk is small: most sections in these documents
 are shorter than 400 words, and a chunk never crosses a section. So the section boundaries,
@@ -192,9 +214,8 @@ Code: `indexer/pipeline/embed.py`.
   count, wrong or mixed dimension) stops the run with a message naming the chunks, the
   model and the URL. The Job then exits 1. There is no fallback to fake vectors.
 - **Vector dimension:** not hard-coded. The indexer records the length of the vectors the
-  model actually returned. `nomic-embed-text` is documented as 768-dimensional, but that
-  has **not been measured here**, because no Ollama model has been run yet (see the test
-  results below).
+  model actually returned. **Measured: 768**, for every one of the 398 chunks. The vectors
+  are unit length (norm 1.0) and identical when the same text is embedded twice.
 - **API check (section 4.4):** the indexer writes `embed_model` and `dimension` into the
   collection metadata, and the API checks them (see "Retrieval and readiness" below).
 
@@ -243,8 +264,21 @@ briefly needs room for two copies of the index (398 rows here, which is small).
   - A model change (768 to 4 dimensions) with a leftover staging collection ended with one
     collection holding only 4-d vectors and the new model in its metadata.
   - Chroma itself rejected a 768-d vector added to the 4-d collection.
-- **Real Ollama embeddings: PENDING.** Ollama is not installed on this laptop and no
-  embedding model has been downloaded, so no real embedding has been produced yet.
+- **Real run (2026-11-04).** Ollama 0.40.14 for Windows, `nomic-embed-text` (274 MB),
+  listening on 127.0.0.1:11434 only.
+  - The model runs 100% on the laptop's GPU (RTX 4060, about 450 MB of video memory). The
+    Ollama processes use under 200 MB of system RAM.
+  - The indexer's `embed()` and `write_index()` stored the 398 real chunks in a temporary
+    Chroma 1.0.12 container (about 52-87 MB of RAM). Embedding took 11.7 s, storing 0.7 s.
+  - The collection metadata reads `embed_model: nomic-embed-text, dimension: 768`.
+  - Stored metadata matched the chunks (e.g. 2023 clause 5.8: `Repeating a Course`,
+    p17, `doc_version 2023-08`, `superseded: True`).
+  - A second run left exactly 398 rows, in one collection.
+  - `truncate: false` did its job: the first attempt stopped with "the input length
+    exceeds the context length" instead of silently cutting the contents chunk. That led
+    to cleaning rule 7.
+  - The chunks were extracted by the indexer image (real OCR), and are identical to the
+    image's output with the current code.
 
 ## Retrieval and readiness
 Code: `api/app/retrieval/chroma.py`, `api/app/routes/health.py`.
@@ -343,8 +377,71 @@ rules) and `doc_version`, both copied from `corpus/raw/_index.json`.
   - `/readyz` gave 200 against the real Chroma. Wrong model, missing collection, empty
     collection and a dimension mismatch were each reported by name. A stopped Chroma
     gave "chroma unreachable".
-- **PENDING (needs Ollama):** embedding real questions, and whether the right passages
-  rank first by meaning (recall@5). Nothing here measures retrieval quality.
+### Real retrieval results (2026-11-04)
+The 16 golden questions were run through the API's `ChromaRetriever`, with real
+nomic-embed-text question embeddings, against the real 398-chunk index (400/50), with
+`k = 5`. The table shows where the first relevant passage ranked, and its score.
+
+| Id | Type | recall@3 | recall@5 | First relevant: rank, score | Top-1 score |
+| --- | --- | --- | --- | --- | --- |
+| o01 | ordinary | 1 | 1 | 1, 0.778 | 0.778 |
+| o02 | ordinary | 1 | 1 | 1, 0.722 | 0.722 |
+| o03 | ordinary | 1 | 1 | 2, 0.839 | 0.840 |
+| o04 | ordinary | 1 | 1 | 3, 0.697 | 0.716 |
+| o05 | ordinary | 0 | 0 | 19, 0.641 | 0.694 |
+| o06 | ordinary (OCR) | 1 | 1 | 1, 0.834 | 0.834 |
+| o07 | ordinary | 1 | 1 | 1, 0.777 | 0.777 |
+| o08 | ordinary | 1 | 1 | 3, 0.728 | 0.749 |
+| v01 | version (current) | 1 | 1 | 1, 0.745 | 0.745 |
+| v02 | version (2023, OCR) | 1 | 1 | 2, 0.753 | 0.759 |
+| e01 | exact | 0 | 0 | 8, 0.643 | 0.719 |
+| e02 | exact | 1 | 1 | 1, 0.845 | 0.845 |
+| e03 | exact | 1 | 1 | 1, 0.870 | 0.870 |
+| a01 | must abstain | - | - | - | 0.736 |
+| a02 | must abstain | - | - | - | 0.585 |
+| i01 | injection | 1 | 1 | 1, 0.821 | 0.821 |
+
+**Macro recall@3 = 0.857, recall@5 = 0.857** (12 of 14). By type: ordinary 0.875,
+version 1.0, exact 0.667, injection 1.0. Retrieval takes about 0.3 s per question once the
+model is loaded (the first call took 3.4 s).
+
+- **Versions worked on real vectors.** v01 searched current documents only and found the
+  2026 clause 5.8. v02 (it names "2023") searched both editions and found the 2023
+  clause 5.8 at rank 2, labelled SUPERSEDED. Two extra questions were tried outside the
+  golden set:
+  - "How did the rule on repeating a failed course change ..." returned both editions'
+    "Repeating a Course".
+  - "What did the earlier version ... say about attendance?" included the 2023 attendance
+    rule, labelled.
+- **Miss o05** (which campus offers BS Civil Engineering): the programmes-by-campus chunk
+  ranks 19th (0.641). It is a 305-token list of programme names and campus codes, so its
+  vector is a blur of many programmes. The tick-mark fix put "LHR" in the text, but
+  retrieval does not find the chunk. Raising `k` would not help much.
+- **Miss e01** ("What does clause 1.21 ... require?"): the clause sits at rank 8 (0.643).
+  The question carries almost no meaning besides the number "1.21", and embeddings blur
+  exact terms. The usual remedy is hybrid retrieval (keyword search alongside vectors),
+  which is not built.
+- **Tried and rejected: nomic task prefixes.** nomic-embed-text is documented to work with
+  `search_document:` / `search_query:` prefixes. Re-indexed with them as a side experiment,
+  recall@5 fell to 0.786 and recall@3 to 0.607 (o08 dropped out, others ranked lower). So
+  no prefixes are used. The code is unchanged.
+
+**Relevance floor, measured.** Scores from nomic-embed-text are bunched together: almost
+everything lands between 0.55 and 0.87.
+- Relevant passages that reached the top 5 scored 0.697 to 0.870.
+- The two missed relevant passages scored 0.641 and 0.643.
+- a02 (hostel applications) topped out at 0.585.
+- a01 (hostel fee) scored **0.736**, higher than the best hit of o02, o04, o05 and e01,
+  because fee passages are close in meaning even though none mentions a hostel fee.
+- **No score floor can separate a01 from the answerable questions.** Its abstention must
+  come from the model reading the passages and finding no hostel fee (generation step 6).
+- The current default `0.5` filters nothing at all (every top-1 is above 0.58).
+- **Recommendation: `RELEVANCE_FLOOR = 0.65`.** It sits between a02's best (0.585) and
+  the lowest relevant top-5 hit (0.697), so a02 abstains without calling the model and
+  every relevant top-5 hit is kept. The margins are thin (0.065 and 0.047), and 16
+  questions are too few to promise anything.
+- The default stays `0.5` in code until the real answer evaluation confirms 0.65 with
+  the model in the loop. A floor never guarantees correct abstention.
 
 ## Generation and grounding
 Code: `api/app/providers/llm/ollama.py`, `api/app/services/answer.py`,
@@ -354,11 +451,10 @@ The steps for one question:
 1. **Retrieve** the top `k` passages (see above).
 2. **Relevance floor.** Passages with `score < RELEVANCE_FLOOR` are dropped. If none is
    left, the API abstains at once and the model is not called. The default `0.5` is a
-   **provisional, uncalibrated** value. It has not been measured, because real embeddings
-   do not exist yet. The plan is to embed the 16 golden questions, then pick a floor
-   between the best score of the must-abstain questions (a01, a02) and the scores of the
-   answerable ones, and set `RELEVANCE_FLOOR` in the ConfigMap with that measurement as
-   the reason. Every `answered` log line records the scores and the floor, for this tuning.
+   **provisional** value. The real retrieval scores (see "Relevance floor, measured"
+   above) point to `0.65`. That will be set in the ConfigMap once the real answer
+   evaluation confirms it. Every `answered` log line records the scores and the floor,
+   for this tuning.
 3. **Prompt.** The model gets a fixed system message with the rules, then the evidence,
    then the question:
    - Answer only from the passages, and never guess.
@@ -435,9 +531,10 @@ data, not real model output), covering:
 
 The existing stub tests still pass unchanged.
 
-**PENDING (needs Ollama):** real answers from `llama3.2:3b`, how often the first reply is
-valid, real answer faithfulness, real injection resistance, the relevance floor
-calibration, and response times.
+**PENDING (next step):** `llama3.2:3b` is downloaded but has not been run yet. Still to
+measure: real answers, how often the first reply is valid, real answer faithfulness, real
+injection resistance, confirming the relevance floor with the model in the loop, and
+response times.
 
 ## Semantic cache
 Thresholds you tried, the false hit that ruled one out, the one you shipped.
