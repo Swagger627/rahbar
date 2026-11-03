@@ -1,0 +1,27 @@
+# Build context for api/: the image needs requirements.txt and app/ only.
+.git
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+tests
+requirements-dev.txt
+pyproject.toml
+corpus
+*.pdf
+# Secrets never enter an image: they arrive at runtime from a Kubernetes Secret.
+.env
+.env.*
+*secret*
+*.pem
+*.key
+Dockerfile
+.dockerignore

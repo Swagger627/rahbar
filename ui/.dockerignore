@@ -1,0 +1,4 @@
+# Build context for ui/: the image needs index.html and nginx.conf only.
+*
+!index.html
+!nginx.conf

@@ -1,0 +1,24 @@
+# RAHBAR chat UI: static files served by nginx on port 8080. The API is not proxied
+# here: the Ingress sends /api to the api Service and / to this one, so the page calls
+# /api/ask on its own origin.
+#
+#   docker build -t rahbar-ui:dev ui
+#
+# nginx-unprivileged already runs as the non-root user nginx (uid 101). ui/nginx.conf
+# writes its pid and temp files under /tmp and logs to stdout/stderr, so the pod can set
+# readOnlyRootFilesystem: true with an emptyDir mounted at /tmp.
+
+# Base pinned by tag and digest: nginx 1.30 (the stable line) on Alpine 3.24.
+FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
+
+# Our nginx.conf replaces the whole configuration and includes no conf.d, so the base
+# image's default site and its start-up scripts (which edit files under /etc/nginx and
+# would fail on a read-only filesystem) are removed.
+USER root
+RUN rm -f /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*.html \
+ && rm -rf /docker-entrypoint.d /docker-entrypoint.sh
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY index.html /usr/share/nginx/html/index.html
+USER 101
+EXPOSE 8080
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
