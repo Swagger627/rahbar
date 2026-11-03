@@ -1,4 +1,6 @@
 # Local minikube: the base as it is. (`make apply` and the README use this overlay.)
+# indexer-dummy-job.yaml in this folder is deliberately NOT listed here: it replaces the
+# index with fake data, so it is only ever applied by hand (see that file).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:

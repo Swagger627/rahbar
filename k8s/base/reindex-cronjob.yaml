@@ -1,0 +1,73 @@
+# The weekly re-index (section 4.1) and the one-command manual re-index (section 4.2):
+#
+#   kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
+#
+# It runs the REAL pipeline (python -m pipeline.run, no --dummy), the only writer to
+# Chroma.
+#
+# SUSPENDED on purpose: the real extract/clean/chunk/embed/store stages and the corpus
+# volume do not exist yet. Set `suspend: false` only after both work. Until then a
+# manual run stops with "no documents found in /corpus" before it touches Chroma.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: indexer
+automountServiceAccountToken: false
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reindex
+spec:
+  # Every Sunday at 03:00 (cluster time).
+  schedule: "0 3 * * 0"
+  suspend: true
+  # Never start a second re-index while one is still running: Chroma has one writer.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: indexer
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: indexer
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: indexer
+              image: rahbar-indexer:dev
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - configMapRef:
+                    name: rahbar-config
+              # Embedding a corpus needs far more memory than serving a query; these
+              # starting values must be checked against `kubectl top pods` (section 4.5).
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}

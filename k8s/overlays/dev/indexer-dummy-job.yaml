@@ -1,0 +1,68 @@
+# DEVELOPMENT ONLY: fill Chroma with three fake chunks so the cluster can be tested
+# before the real indexing pipeline exists (STARTER.md, "How the week runs").
+#
+# WARNING: --dummy DELETES the "rahbar" collection and replaces it with the fake one.
+# That is why this file is NOT listed in any kustomization.yaml: `kubectl apply -k`
+# never runs it. Run it on purpose, once, and never after the real index is built:
+#
+#   kubectl apply -f k8s/overlays/dev/indexer-dummy-job.yaml
+#   kubectl logs -n rahbar job/indexer-dummy
+#
+# A finished Job is not re-run by applying the file again; delete it first if you
+# really do want a fresh dummy index: kubectl delete job indexer-dummy -n rahbar
+#
+# The ConfigMap's EMBED_MODEL must be "dummy-768" while this index is in place.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: indexer-dummy
+  namespace: rahbar
+  labels:
+    app: indexer
+    purpose: dev-dummy-index
+spec:
+  # Retry a failed pod at most twice (for example while Chroma is still starting).
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: indexer
+        purpose: dev-dummy-index
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: indexer
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: indexer
+          image: rahbar-indexer:dev
+          imagePullPolicy: IfNotPresent
+          args: ["--dummy"]
+          # CHROMA_HOST, CHROMA_PORT, CHROMA_COLLECTION and EMBED_MODEL come from here.
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -1,6 +1,33 @@
 # Stable in-cluster addresses (section 4.1). ClusterIP means "reachable only from inside
-# the cluster": the data stores are never exposed with NodePort or LoadBalancer.
+# the cluster": the data stores are never exposed with NodePort or LoadBalancer, and the
+# api and ui are reached from outside only through the Ingress (a later step).
 # Each Service finds its pods by label, so restarted pods are picked up automatically.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  type: ClusterIP
+  selector:
+    app: api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+spec:
+  type: ClusterIP
+  selector:
+    app: ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
 apiVersion: v1
 kind: Service
 metadata:

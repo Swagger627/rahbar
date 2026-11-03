@@ -8,4 +8,7 @@ resources:
   - configmap.yaml
   - chroma-statefulset.yaml
   - redis.yaml
+  - api.yaml
+  - ui.yaml
+  - reindex-cronjob.yaml
   - services.yaml
