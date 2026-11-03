@@ -1,0 +1,93 @@
+# Chroma, the vector database (section 4.1). A StatefulSet, not a Deployment, because it
+# owns data: its pod keeps the same name and the same disk (PVC) across restarts, and
+# there is never a second copy writing to that disk. Only the indexer Job writes to it;
+# the api only reads.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chroma
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: chroma
+spec:
+  serviceName: chroma
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chroma
+  template:
+    metadata:
+      labels:
+        app: chroma
+    spec:
+      serviceAccountName: chroma
+      automountServiceAccountToken: false
+      # The official image starts as root; it also runs fine as a plain user, so we
+      # run it as uid 1000. fsGroup makes the mounted disk writable for that user.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: chroma
+          # Same version as chromadb-client in api/ and indexer/ requirements.txt.
+          image: chromadb/chroma:1.0.12
+          ports:
+            - name: http
+              containerPort: 8000
+          # The image has no curl or wget, so the probes are plain HTTP checks made by
+          # Kubernetes itself.
+          readinessProbe:
+            httpGet:
+              path: /api/v2/heartbeat
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/v2/heartbeat
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
+          # Starting values for a small local cluster; to be checked against
+          # `kubectl top pods` output and adjusted (section 4.5).
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # The image's /config.yaml sets persist_path: "/data".
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  # One PVC per pod, created by the StatefulSet: data-chroma-0. It survives pod
+  # restarts and deletes, so the index does too.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

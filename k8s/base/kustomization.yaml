@@ -1,0 +1,11 @@
+# The list of RAHBAR manifests. `kubectl apply -k k8s/overlays/dev` applies them all,
+# and every object is placed in the rahbar namespace.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rahbar
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - chroma-statefulset.yaml
+  - redis.yaml
+  - services.yaml

@@ -1,0 +1,29 @@
+# Non-secret settings shared by the api and the indexer (section 4.1).
+# Both programs read these environment variables (api/app/config.py and
+# indexer/pipeline/config.py), so one image runs everywhere. Secrets never go here:
+# the LLM key lives in a Kubernetes Secret created from the command line.
+#
+# Week-1 values: the stub retriever and stub LLM, and the dummy index's model name, so
+# the cluster can be proved before the real pipeline exists. Later steps switch
+# RETRIEVER and LLM_PROVIDER, set EMBED_MODEL to the real model, and add the
+# relevance floor and cache threshold once they have been measured.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rahbar-config
+data:
+  RETRIEVER: "stub"
+  LLM_PROVIDER: "stub"
+  # The embedding pin (section 4.4): the api and the indexer must read the same value.
+  EMBED_MODEL: "dummy-768"
+  CHROMA_HOST: "chroma"
+  CHROMA_PORT: "8000"
+  CHROMA_COLLECTION: "rahbar"
+  TOP_K: "5"
+  # Low temperature because answers must be factual and valid JSON; 0.2 still lets
+  # the model phrase an answer naturally.
+  TEMPERATURE: "0.2"
+  # Chunking, in tokens (section 3.1); the shipped values come from our experiment.
+  CHUNK_SIZE: "400"
+  CHUNK_OVERLAP: "50"
+  LOG_LEVEL: "INFO"

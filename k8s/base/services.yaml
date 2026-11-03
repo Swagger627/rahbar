@@ -1,0 +1,28 @@
+# Stable in-cluster addresses (section 4.1). ClusterIP means "reachable only from inside
+# the cluster": the data stores are never exposed with NodePort or LoadBalancer.
+# Each Service finds its pods by label, so restarted pods are picked up automatically.
+apiVersion: v1
+kind: Service
+metadata:
+  name: chroma
+spec:
+  type: ClusterIP
+  selector:
+    app: chroma
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
