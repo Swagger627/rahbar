@@ -85,6 +85,13 @@ class ChromaRetriever:
         found = {p.chunk_id for p in exact}
         return (exact + [p for p in ranked if p.chunk_id not in found])[:k]
 
+    def cache_key(self, question: str) -> tuple[list[float], str]:
+        """The question's vector and the current index version (the Chroma collection id),
+        for the semantic cache. A re-index makes a new collection, so a new id. The
+        embedding pin is checked here too."""
+        collection, dimension = self._open_collection()
+        return self._embed_question(question, dimension), str(collection.id)
+
     def check_index(self) -> dict[str, object]:
         """The readiness checks: Chroma answers, the collection exists and is not empty,
         it was built with EMBED_MODEL, and its stored vectors have the recorded length.

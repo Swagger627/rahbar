@@ -12,6 +12,8 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_
 router = APIRouter()
 
 REQUESTS = Counter("rahbar_requests_total", "HTTP requests", ["path", "status"])
+# result = hit | miss | error (Redis failed, the request went on without the cache)
+CACHE = Counter("rahbar_cache_lookups_total", "Semantic cache lookups", ["result"])
 LATENCY = Histogram(
     "rahbar_request_seconds",
     "HTTP request latency",

@@ -32,6 +32,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = settings
     app.state.retriever = get_retriever(settings)
     app.state.provider = get_provider(settings)
+    # The semantic cache's Redis client, shared by all requests; it connects on first use.
+    # All API replicas point at the same Redis, so they share one cache.
+    app.state.redis = None
+    if settings.redis_url:
+        import redis
+
+        app.state.redis = redis.Redis.from_url(settings.redis_url, socket_timeout=2,
+                                               socket_connect_timeout=2)
     # The embedding pin (section 4.4): compare the collection's metadata with EMBED_MODEL
     # now, and log exactly what conflicts. The pod keeps running but /readyz answers 503
     # (it repeats the same check), so Kubernetes sends it no traffic until it is fixed.

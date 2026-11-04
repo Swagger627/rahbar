@@ -26,7 +26,7 @@ this file is the disclosure instead.
 
 | Tool | What it wrote or shaped | What we changed afterwards, and why |
 | --- | --- | --- |
-| Claude Code (Anthropic, model Claude Opus 5.5), in the Claude desktop app | Corpus selection and verification scripts; the golden set; `eval/run_eval.py` and its tests; the Dockerfiles; all Kubernetes manifests; the indexer (extract, clean, chunk, embed, store); the API retriever, readiness checks, Ollama provider, grounding checks and prompt; all unit tests; `docs/PIPELINE.md`, `docs/CORPUS.md`, ADR 0001 and this file. It also ran the real measurements (OCR, embeddings, retrieval, answer evaluation) on the laptop, and reported the numbers in `docs/PIPELINE.md`. | Every change below was made because a real test or measurement showed a problem. It was then re-tested, and the before-and-after numbers are recorded in `docs/PIPELINE.md`. The fixes are listed after this table. |
+| Claude Code (Anthropic, model Claude Opus 5.5), in the Claude desktop app | Corpus selection and verification scripts; the golden set; `eval/run_eval.py` and its tests; the Dockerfiles; all Kubernetes manifests; the indexer (extract, clean, chunk, embed, store); the API retriever, readiness checks, Ollama provider, grounding checks, prompt and Redis semantic cache; all unit tests; `docs/PIPELINE.md`, `docs/CORPUS.md`, ADRs 0001 and 0003, and this file. It also ran the real measurements (OCR, embeddings, retrieval, answer evaluation) on the laptop, and reported the numbers in `docs/PIPELINE.md`. | Every change below was made because a real test or measurement showed a problem. It was then re-tested, and the before-and-after numbers are recorded in `docs/PIPELINE.md`. The fixes are listed after this table. |
 | Ollama models `nomic-embed-text` and `llama3.2:3b` | These are **part of the product**, not development help: they embed the chunks and questions, and generate the answers. | Their real behaviour drove several of the changes below (the citation format, the injection filter, the relevance floor). |
 
 **Changes made after real tests or measurements:**
@@ -45,6 +45,10 @@ this file is the disclosure instead.
 - **Relevance floor:** set to 0.65 after measuring real scores.
 - **Exact clauses:** the per-clause match limit went from 2 to 1, after a second "5.4" match
   came from an unrelated document.
+- **Semantic cache:** the threshold was chosen from real similarity scores of paraphrase and
+  hard-negative pairs. A key-term check (numbers, grades, codes, history words) was added
+  because similarity alone gave false hits ("old rule" vs "current rule" scored 0.955).
+  0.90 was picked over 0.85 for a safety margin.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is

@@ -1,23 +1,62 @@
 """Turns a question into an AskResponse. This is where the query pipeline lives.
 
-retrieve -> relevance floor -> drop passages that instruct the AI -> generate ->
-check citations (one retry) -> respond.
-The semantic cache (3.3) is added in a later step.
+semantic cache -> retrieve -> relevance floor -> drop passages that instruct the AI ->
+generate -> check citations (one retry) -> respond -> store a safe answer in the cache.
 """
 
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from ..config import Settings
 from ..logjson import request_id_var
 from ..providers.llm.base import LLMProvider
 from ..retrieval.base import Retriever
+from ..retrieval.chroma import ChromaRetriever
+from ..routes.metrics import CACHE
 from ..schemas import Answer, AskResponse, Passage, RetrievedRef
+from . import cache
 from .grounding import (FALLBACK, NOT_COVERED, above_floor, check_answer, refusal,
                         without_instructions)
 
 log = logging.getLogger("rahbar.answer")
+
+
+def answer_with_cache(question: str, retriever: Retriever, provider: LLMProvider,
+                      settings: Settings, redis: Any) -> tuple[AskResponse, str]:
+    """answer_question with the semantic cache around it. Returns the response and the
+    cache result: "hit", "miss", "error" (Redis failed, so the cache was skipped) or "off"
+    (no Redis configured, or the stub retriever, which has no embeddings).
+
+    Redis problems never fail the request and never serve anything unchecked: the request
+    simply runs the normal pipeline."""
+    if redis is None or not isinstance(retriever, ChromaRetriever):
+        return answer_question(question, retriever, provider, settings), "off"
+    vector, index_version = retriever.cache_key(question)
+    space = cache.namespace(settings.embed_model, index_version)
+    try:
+        entry, similarity = cache.lookup(redis, space, question, vector,
+                                         settings.cache_threshold)
+    except Exception as exc:
+        log.warning("cache lookup failed; continuing without it",
+                    extra={"error": type(exc).__name__})
+        CACHE.labels(result="error").inc()
+        return answer_question(question, retriever, provider, settings), "error"
+    if entry is not None:
+        CACHE.labels(result="hit").inc()
+        log.info("cache hit", extra={"similarity": round(similarity, 4),
+                                     "chunk_ids": [r["chunk_id"] for r in entry["response"]["retrieved"]]})
+        # The stored answer, with this request's own id.
+        return AskResponse(**entry["response"], request_id=request_id_var.get()), "hit"
+    CACHE.labels(result="miss").inc()
+    response = answer_question(question, retriever, provider, settings)
+    if cache.worth_caching(response):
+        try:
+            cache.store(redis, space, question, vector, response, settings.cache_ttl_seconds)
+        except Exception as exc:
+            log.warning("cache store failed", extra={"error": type(exc).__name__})
+    return response, "miss"
 
 
 def answer_question(

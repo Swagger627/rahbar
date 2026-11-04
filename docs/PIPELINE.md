@@ -381,8 +381,8 @@ rules) and `doc_version`, both copied from `corpus/raw/_index.json`.
   `RETRIEVER=chroma` it returns 200 only if every check passes, in this order: Chroma
   answers a heartbeat; the collection exists; its `embed_model` equals `EMBED_MODEL`; its
   `dimension` is a positive whole number; it holds at least one row; and a stored vector
-  really has `dimension` values. When `REDIS_URL` is set, Redis must also answer a ping
-  (the cache does not exist yet, so `REDIS_URL` is not set today). Any failure returns 503
+  really has `dimension` values. When `REDIS_URL` is set (the semantic cache is on), Redis
+  must also answer a ping. Without `REDIS_URL` there is no cache and no Redis check. Any failure returns 503
   with `{"status": "not ready", "reason": ...}` naming the first failed check. The reason
   names only the exception type, never a URL or password. With `RETRIEVER=stub` it is
   always ready, so lightweight development needs no index.
@@ -938,7 +938,118 @@ citation proves the answer came from that table page, not from which row.
 - pages without ticks are unchanged.
 
 ## Semantic cache
-Thresholds you tried, the false hit that ruled one out, the one you shipped.
+Code: `api/app/services/cache.py`, `answer_with_cache` in `api/app/services/answer.py`.
+Store: Redis (why, in `docs/adr/0003-cache-in-redis.md`).
+
+**How it works, in plain English.**
+1. The question is embedded with the same model as the index (`nomic-embed-text`).
+2. Redis is searched for an earlier question whose vector has cosine similarity **at least
+   `CACHE_THRESHOLD` (0.90)** and whose **key terms are the same**:
+   - the same numbers (clause "1.21" vs "5.4", "15" vs "30" days, the year "2023");
+   - the same letter grades ("B-" vs "B+");
+   - the same short capital codes ("BS" vs "MS", "LHR" vs "ISB");
+   - both or neither asking about an older policy ("old", "former", "changed", ...).
+
+   The university's own name ("FAST", "NUCES") is ignored.
+3. If one is found, its stored answer comes back with this request's own `request_id`
+   (a **hit**), and retrieval and the model are skipped.
+4. Otherwise the normal pipeline runs (a **miss**). The answer is stored only if it was
+   given from the documents and passed the citation check
+   (`answered_from_context: true`, with citations). Abstentions, the safe fallback, errors
+   and anything that failed validation are **never** stored.
+5. Each entry expires after `CACHE_TTL_SECONDS` (3600 s).
+6. The model's reasoning and the request id are not stored.
+7. Every response carries a header `X-Cache: hit | miss | error | off`; the JSON body is
+   unchanged. `/metrics` counts `rahbar_cache_lookups_total{result=...}`.
+8. All API replicas use the same Redis, so they share one cache. The API has no
+   conversations, so there are no follow-up questions to skip.
+
+**Choosing the threshold, with data.** The test set has 10 genuine paraphrase pairs and 12
+hard-negative pairs. The negatives are close in wording but different in meaning: current
+vs 2023 policy, hostel availability vs hostel applications, hostel fee vs tuition fee,
+clause 1.21 vs 5.4, BS Civil vs BS Electrical Engineering, B- vs B+, refunds within 15 vs 30
+days, MS vs BS Data Science, current vs old rule, and others. All pairs were embedded with
+the real `nomic-embed-text`.
+
+Similarity alone cannot separate them. Several hard negatives scored *higher* than real
+paraphrases:
+- "What is the current rule on repeating a failed course?" ~ "What was the old rule on
+  repeating a failed course?": **0.955**
+- "B- worth?" ~ "B+ worth?": **0.943**
+- "refunded within 15 days?" ~ "within 30 days?": **0.930**
+- "MS in Data Science" ~ "BS in Data Science": **0.899**
+
+The genuine paraphrases scored 0.80-0.996.
+
+| Threshold | similarity only: paraphrases reused | similarity only: false hits | + key-term check: paraphrases reused | + key-term check: false hits |
+| --- | --- | --- | --- | --- |
+| 0.80 | 10/10 | 7/12 | 10/10 | **2/12** |
+| 0.85 | 7/10 | 5/12 | 7/10 | 0/12 |
+| **0.90 (shipped)** | 5/10 | 3/12 | **5/10** | **0/12** |
+| 0.95 | 1/10 | 1/12 | 1/10 | 0/12 |
+
+**The false hits that ruled thresholds out:**
+- 0.80, even with the key-term check: "What is the hostel fee per semester?" would reuse the
+  answer to "What is the tuition fee per semester?" (0.841). "Which campus offers BS
+  Electrical Engineering?" would reuse "BS Civil Engineering" (0.830).
+- Without the check, 0.95: "the old rule on repeating a failed course" would reuse "the
+  current rule" (0.955), which would serve a current rule as a historical one, or the
+  reverse.
+
+**Why 0.90, not 0.85.** By the lecture's rule (the lowest threshold with zero false hits),
+0.85 would win. But the nearest real false hit, hostel fee ~ tuition fee at 0.841, is only
+0.009 below it, and 12 negatives are a small sample. 0.90 keeps a 0.059 margin and still
+reuses half of the paraphrases. The key-term check blocked no genuine paraphrase.
+
+**Invalidation on re-index.** Every entry's Redis key is
+`rahbar:cache:<embedding model>:<Chroma collection id>:<hash of the question>`.
+- The staged re-index (ADR 0001) always builds a *new* collection, so the collection id
+  changes.
+- After a re-index, the API looks only under the new id, so answers built from the old
+  index can never be served, and they expire within an hour.
+- A different `EMBED_MODEL` also gives a different key, so vectors from two models are
+  never compared.
+- The indexer needs no Redis access (its NetworkPolicy allows only Chroma), and there is no
+  "flush" step to forget.
+
+**Real test (2026-11-04).** Real API, a temporary Redis 7.4.12 container (64 MB limit),
+real Ollama, the real 431-chunk index, floor 0.65, threshold 0.90, questions one at a time.
+
+| Run | Results | LLM calls | Latency |
+| --- | --- | --- | --- |
+| golden set, pass 1 | 16 misses | 18 | median 2.40 s, mean 2.87 s |
+| golden set, pass 2 (exact repeats) | 12 hits, 4 misses | 4 | hits median **0.25 s**; misses median 1.93 s |
+
+- The 4 pass-2 misses (o07, v02, a01, a02) are the questions that abstained in pass 1.
+  Abstentions are not stored, so they were answered again.
+- All 12 hits returned exactly the pass-1 answer, with a new request id.
+- Paraphrase pairs: 5 of 10 hits, matching the offline measurement.
+- Hard-negative pairs: **0 of 12** hits. For example, "B+" after "B-" missed and was
+  answered "3.33"; "30 days" after "15 days" missed and was answered "50%".
+- Storage: 38 entries after the test, about 12 KB each (mostly the 768-number vector),
+  expiring after one hour (3,570 s left on the first one checked). No reasoning was stored.
+- **Re-index:** a staged re-index of the same 431 chunks changed the collection id
+  (`f1a7...` to `bed1...`). The same question then **missed** and was answered fresh, and
+  the next ask hit under the new id. The 38 old entries stayed under the old id, unused.
+- **Redis stopped:** the next question was answered by the normal pipeline
+  (`X-Cache: error`), and `/readyz` answered 503 "redis unreachable: TimeoutError".
+
+**Limitations.**
+- **A cached answer is exactly as good as the first answer.** The citation check proves
+  the citations are real, not that the answer is right, so a wrong answer that passed is
+  served again until it expires. In this test the reverse also happened: the cached B-
+  answer was the correct "2.67", while the uncached run during the Redis outage gave the
+  wrong "3.33". The one-hour expiry limits how long a mistake lives.
+- On a miss, the question is embedded twice (once for the cache, once by the retriever),
+  which adds one short embedding call.
+- Lookup reads every entry of the current index from Redis (`SCAN` + `MGET`) and compares
+  vectors in Python. That is fine for hundreds of entries, but would need a vector index
+  (RediSearch, or a Chroma collection) for many thousands.
+- The key-term check is a simple rule. A paraphrase that writes a number in words ("three"
+  vs "3") will miss, which is safe. Two questions that differ only in an ordinary word
+  ("Civil" vs "Electrical") rely on the threshold alone.
+- `CACHE_THRESHOLD`, `CACHE_TTL_SECONDS` and `REDIS_URL` are not in the ConfigMap yet;
+  that is the deployment step.
 
 ## Evaluation method
 How recall@k matches retrieved passages to golden ones (by source and section? by chunk id?).

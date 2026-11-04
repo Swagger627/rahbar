@@ -48,9 +48,15 @@ class Settings:
     hosted_base_url: str = ""        # e.g. an OpenAI-compatible endpoint
     llm_api_key: str = field(default="", repr=False)   # from the Secret; never log it
 
-    # Redis (the semantic cache, section 3.3). Empty means the API does not use Redis
-    # yet, so /readyz does not check it. It may hold a password: never log it.
+    # Redis (the semantic cache, section 3.3). Empty means no cache and no Redis check in
+    # /readyz (the stub setup for local development). It may hold a password: never log it.
     redis_url: str = field(default="", repr=False)
+    # CACHE_THRESHOLD: reuse a stored answer only at cosine similarity >= this, and only if
+    # the questions name the same numbers, grades and codes (services/cache.py). 0.90 was
+    # measured on paraphrases and hard negatives (docs/PIPELINE.md): 0.80 let "hostel fee"
+    # reuse a "tuition fee" answer; 0.85 had no false hit but only a 0.009 margin.
+    cache_threshold: float = 0.90
+    cache_ttl_seconds: int = 3600     # CACHE_TTL_SECONDS: a stored answer lives one hour
 
     log_level: str = "INFO"
 
@@ -71,5 +77,7 @@ def get_settings() -> Settings:
         hosted_base_url=os.environ.get("HOSTED_BASE_URL", ""),
         llm_api_key=os.environ.get("LLM_API_KEY", ""),
         redis_url=os.environ.get("REDIS_URL", ""),
+        cache_threshold=_float("CACHE_THRESHOLD", 0.90),
+        cache_ttl_seconds=_int("CACHE_TTL_SECONDS", 3600),
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
     )
