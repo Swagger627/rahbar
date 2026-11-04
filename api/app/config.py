@@ -36,10 +36,12 @@ class Settings:
     # Retrieval and generation
     top_k: int = 5
     # RELEVANCE_FLOOR: passages scoring below this (1 - cosine distance) are not shown to
-    # the model; if none is left, the API abstains without calling it. 0.5 is a PROVISIONAL
-    # starting value, not yet calibrated: it must be tuned on the golden set once real
-    # embeddings exist.
-    relevance_floor: float = 0.5
+    # the model; if none is left, the API abstains without calling it. 0.65, measured with
+    # nomic-embed-text on the 16 golden questions (docs/PIPELINE.md): every relevant top-5
+    # passage scored >= 0.697, and the hostel-application question topped out at 0.585.
+    # With 0.5 that question was once answered. A floor cannot catch every unanswerable
+    # question (the hostel-fee one scores 0.736), so the model's own check still matters.
+    relevance_floor: float = 0.65
     temperature: float = 0.2
     llm_model: str = "llama3.2:3b"
     ollama_url: str = "http://host.minikube.internal:11434"
@@ -62,7 +64,7 @@ def get_settings() -> Settings:
         chroma_port=_int("CHROMA_PORT", 8000),
         collection=os.environ.get("CHROMA_COLLECTION", "rahbar"),
         top_k=_int("TOP_K", 5),
-        relevance_floor=_float("RELEVANCE_FLOOR", 0.5),
+        relevance_floor=_float("RELEVANCE_FLOOR", 0.65),
         temperature=_float("TEMPERATURE", 0.2),
         llm_model=os.environ.get("LLM_MODEL", "llama3.2:3b"),
         ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),

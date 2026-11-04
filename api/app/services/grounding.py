@@ -22,9 +22,31 @@ def refusal(text: str, reason: str) -> Answer:
                   confidence="low")
 
 
+# Text that talks to an AI instead of stating a rule. University rulebooks never say this; a
+# poisoned document does. The real llama3.2:3b obeyed such a passage 5 times out of 5 in
+# our test, despite the prompt's rules, so these passages never reach the model.
+INSTRUCTION_LIKE = re.compile(
+    r"ignore (all |any )?(the |your )?(previous|prior|above|earlier|other) "
+    r"(instructions|rules|documents)"
+    r"|disregard (all |any )?(the |your )?(previous|prior|above|earlier) "
+    r"|(system|developer) (instruction|prompt|message)"
+    r"|instructions? to the (ai|assistant|model)"
+    r"|you are (now )?an? (ai|assistant|language model)",
+    re.IGNORECASE)
+
+
 def above_floor(passages: list[Passage], floor: float) -> list[Passage]:
     """The passages relevant enough to show the model."""
     return [p for p in passages if p.score >= floor]
+
+
+def without_instructions(passages: list[Passage]) -> tuple[list[Passage], list[str]]:
+    """Split off passages whose text gives instructions to an AI. Returns (kept, dropped
+    chunk ids). This only catches obvious injections; a poisoned document that states a
+    false rule plainly is stopped by who may write the index, not here."""
+    kept = [p for p in passages if not INSTRUCTION_LIKE.search(p.text)]
+    dropped = [p.chunk_id for p in passages if INSTRUCTION_LIKE.search(p.text)]
+    return kept, dropped
 
 
 def check_answer(answer: Answer, passages: list[Passage]) -> tuple[Answer, str | None]:

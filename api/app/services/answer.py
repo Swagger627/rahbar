@@ -1,6 +1,7 @@
 """Turns a question into an AskResponse. This is where the query pipeline lives.
 
-retrieve -> relevance floor -> generate -> check citations (one retry) -> respond.
+retrieve -> relevance floor -> drop passages that instruct the AI -> generate ->
+check citations (one retry) -> respond.
 The semantic cache (3.3) is added in a later step.
 """
 
@@ -13,7 +14,8 @@ from ..logjson import request_id_var
 from ..providers.llm.base import LLMProvider
 from ..retrieval.base import Retriever
 from ..schemas import Answer, AskResponse, Passage, RetrievedRef
-from .grounding import FALLBACK, NOT_COVERED, above_floor, check_answer, refusal
+from .grounding import (FALLBACK, NOT_COVERED, above_floor, check_answer, refusal,
+                        without_instructions)
 
 log = logging.getLogger("rahbar.answer")
 
@@ -22,7 +24,9 @@ def answer_question(
     question: str, retriever: Retriever, provider: LLMProvider, settings: Settings
 ) -> AskResponse:
     passages = retriever.retrieve(question, k=settings.top_k)
-    evidence = above_floor(passages, settings.relevance_floor)
+    evidence, dropped = without_instructions(above_floor(passages, settings.relevance_floor))
+    if dropped:
+        log.warning("passages with AI instructions dropped", extra={"chunk_ids": dropped})
     if evidence:
         answer, outcome = generate_checked(question, evidence, provider)
     else:
