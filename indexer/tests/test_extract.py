@@ -104,16 +104,31 @@ class FakeTickPage:
         return [{"text": "5 √ √", "chars": self.row}]
 
 
-def test_ticks_become_the_column_heading_above_them() -> None:
+def test_tick_row_becomes_one_line_with_its_columns() -> None:
     text = "CFD ISB LHR\n5 Bachelor of Science (Civil Engineering) √ √"
-    assert ex._name_ticks(FakeTickPage(), text).splitlines()[1] == (
-        "5 Bachelor of Science (Civil Engineering) CFD LHR")
+    assert ex._name_ticks(FakeTickPage(), text).splitlines() == [
+        "CFD ISB LHR",
+        "Table row: 5 Bachelor of Science (Civil Engineering) | marked under: CFD LHR "
+        "(columns: CFD ISB LHR)"]           # ISB is listed as a column but not as marked
 
 
 def test_a_tick_with_no_heading_above_is_left_alone() -> None:
     page = FakeTickPage()
     page.headings = [page.headings[0]]           # only CFD is printed
-    assert ex._name_ticks(page, "5 x √ √").endswith("x CFD √")
+    assert ex._name_ticks(page, "5 x √ √") == (
+        "Table row: 5 x | marked under: CFD √ (columns: CFD)")
+
+
+def test_a_wrapped_row_name_is_joined_back_to_its_row() -> None:
+    page = FakeTickPage()
+    page.row = [page.row[1], page.row[2]]        # the tick line holds only the ticks
+    text = ("Master's degree programs\n6 Master of Science (Computer Networks &\n"
+            "Security)\n√ √\nnext paragraph")
+    assert ex._name_ticks(page, text).splitlines() == [
+        "Master's degree programs",              # not part of the row name
+        "Table row: 6 Master of Science (Computer Networks & Security) | marked under: CFD LHR "
+        "(columns: CFD ISB LHR)",
+        "next paragraph"]
 
 
 def test_pages_without_ticks_are_unchanged() -> None:

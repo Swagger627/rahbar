@@ -116,3 +116,28 @@ def test_two_documents_never_share_a_chunk() -> None:
 def test_bad_size_or_overlap_is_rejected(size: int, overlap: int) -> None:
     with pytest.raises(ValueError):
         chunk(make_doc(["text"]), size, overlap)
+
+
+def test_each_table_row_is_its_own_chunk_with_the_section_and_page() -> None:
+    row5 = ("Table row: 5 Bachelor of Science (Civil Engineering) | marked under: LHR "
+            "(columns: CFD ISB KHI LHR PWR)")
+    row6 = "Table row: 6 Bachelor of Science (Computer Science) | marked under: CFD ISB (columns: CFD ISB)"
+    doc = make_doc(["Chapter-1 Programs Offered and Campuses\nCFD ISB KHI LHR PWR\n" + row5,
+                    row6 + "\nAfter the table, ordinary text continues here."])
+    chunks = chunk(doc, size=400, overlap=50)
+    assert [c.text for c in chunks] == [
+        "Chapter-1 Programs Offered and Campuses\nCFD ISB KHI LHR PWR",
+        f"Chapter-1 Programs Offered and Campuses\n{row5}",
+        f"Chapter-1 Programs Offered and Campuses\n{row6}",
+        "Chapter-1 Programs Offered and Campuses\nAfter the table, ordinary text continues here."]
+    assert [c.page for c in chunks] == [1, 1, 2, 2]
+    assert {c.section for c in chunks} == {"Chapter-1 Programs Offered and Campuses"}
+    assert all(c.doc_version == "2023" and c.superseded is True for c in chunks)
+    assert [c.id for c in chunks] == [f"rules-{n:04d}" for n in range(4)]
+
+
+def test_rows_never_merge_or_overlap_with_neighbouring_text() -> None:
+    row = "Table row: 1 Doctor of Philosophy (Mathematics) | marked under: LHR (columns: LHR)"
+    text = "# Grade Points\n" + " ".join(f"w{i}" for i in range(30)) + "\n" + row
+    chunks = chunk(make_doc([text]), size=400, overlap=10)
+    assert chunks[-1].text == f"Grade Points\n{row}"          # no overlap words carried in

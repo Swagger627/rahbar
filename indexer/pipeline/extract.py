@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,7 @@ OCR_DPI = 300   # tesseract reads small print well at 300 dots per inch
 # the scanned policy's clause numbers ("4.2.") as a separate column and lost them.
 OCR_CONFIG = "--psm 4"
 TICKS = "√✓✔"
+TABLE_ROW = "Table row: "   # chunk.py makes every line starting with this its own chunk
 TICK_COLUMN_WIDTH = 20   # points: how far a tick may sit from the centre of its heading
 
 
@@ -63,31 +65,54 @@ def _extract_pdf(file: Path) -> list[Page]:
 def _name_ticks(page: Any, text: str) -> str:
     """Tick-mark tables ("√" under column headings such as CFD ISB KHI LHR PWR) lose their
     columns in plain text: "5 Bachelor of Science (Civil Engineering) √" no longer says
-    which campus. Replace each tick with the heading printed straight above it, giving
-    "5 Bachelor of Science (Civil Engineering) LHR". A tick with no heading within
-    TICK_COLUMN_WIDTH points above it is left as it is; nothing is guessed."""
+    which campus. Each tick is replaced by the heading printed straight above it, and each
+    table row becomes one self-contained line that the chunker keeps as its own chunk:
+
+        Table row: 5 Bachelor of Science (Civil Engineering) | marked under: LHR
+        (columns: CFD ISB KHI LHR PWR)          <- on the same line in the output
+
+    A tick with no heading within TICK_COLUMN_WIDTH points above it stays a tick, and an
+    empty cell is simply not listed; nothing is guessed."""
     ticks = [c for c in page.chars if c["text"] in TICKS]
     if not ticks:
         return text
     first_tick = min(c["top"] for c in ticks)
     headings = [w for w in page.extract_words() if w["bottom"] <= first_tick and w["text"].isupper()]
 
-    def column(tick: dict[str, Any]) -> str:
+    def heading_above(tick: dict[str, Any]) -> dict[str, Any] | None:
         x = (tick["x0"] + tick["x1"]) / 2
         above = [w for w in headings if abs((w["x0"] + w["x1"]) / 2 - x) <= TICK_COLUMN_WIDTH]
-        return max(above, key=lambda w: w["bottom"])["text"] if above else tick["text"]
+        return max(above, key=lambda w: w["bottom"]) if above else None
 
+    # The column headings: every heading word on the same printed line as the ones above
+    # the ticks (so a column that nobody ticked is still listed).
+    used = [h for h in map(heading_above, ticks) if h is not None]
+    header = [w for w in headings if used and abs(w["bottom"] - used[0]["bottom"]) <= 2]
+    columns = " ".join(w["text"] for w in sorted(header, key=lambda w: w["x0"]))
     # The column names for each line that has ticks, in the same reading order as `text`.
-    rows = [[column(c) for c in line["chars"] if c["text"] in TICKS]
+    rows = [[(heading_above(c) or {"text": c["text"]})["text"]
+             for c in line["chars"] if c["text"] in TICKS]
             for line in page.extract_text_lines(use_text_flow=True, return_chars=True)
             if any(c["text"] in TICKS for c in line["chars"])]
-    lines = []
+    lines: list[str] = []
+    pending: list[str] = []          # lines since the last table row
     for line in text.splitlines():
-        if rows and any(t in line for t in TICKS):
-            names = iter(rows.pop(0))
-            line = "".join(next(names, ch) if ch in TICKS else ch for ch in line)
-        lines.append(line)
-    return "\n".join(lines)
+        if not (rows and any(t in line for t in TICKS)):
+            pending.append(line)
+            continue
+        names = " ".join(rows.pop(0))
+        label = "".join(ch for ch in line if ch not in TICKS).strip()
+        if not label:
+            # The row's name wrapped onto the lines above ("6 Master of Science (Computer
+            # Networks &" / "Security)"): take the lines back to the one with the row number.
+            start = max((i for i, p in enumerate(pending) if re.match(r"\d+\s", p)), default=None)
+            if start is not None:
+                label = " ".join(p.strip() for p in pending[start:])
+                pending = pending[:start]
+        lines += pending
+        pending = []
+        lines.append(f"{TABLE_ROW}{label} | marked under: {names} (columns: {columns})")
+    return "\n".join(lines + pending)
 
 
 def _ocr_page(file: Path, number: int) -> str:

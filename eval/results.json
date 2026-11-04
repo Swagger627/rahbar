@@ -1,18 +1,18 @@
 {
-  "recall@3": 0.928571,
-  "recall@5": 0.928571,
+  "recall@3": 1.0,
+  "recall@5": 1.0,
   "recall@3_by_type": {
     "abstain": null,
     "exact": 1.0,
     "injection": 1.0,
-    "ordinary": 0.875,
+    "ordinary": 1.0,
     "version": 1.0
   },
   "recall@5_by_type": {
     "abstain": null,
     "exact": 1.0,
     "injection": 1.0,
-    "ordinary": 0.875,
+    "ordinary": 1.0,
     "version": 1.0
   },
   "answerable_by_type": {
@@ -31,10 +31,10 @@
     "must_abstain": 2,
     "abstained_correctly": 2,
     "unscored": 0,
-    "citations": 12,
-    "citations_valid": 12,
+    "citations": 15,
+    "citations_valid": 15,
     "answers_without_citations": 0,
-    "answerable_declined": 3,
+    "answerable_declined": 1,
     "malformed": 0
   },
   "malformed": [],
@@ -45,7 +45,8 @@
       "must_abstain": false,
       "recall@3": 1.0,
       "recall@5": 1.0,
-      "answered_from_context": false,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
       "retrieved_ids": [
         "academic-rules-handbook-jun-2026-0032",
         "prospectus-2026-academic-rules-and-regulations-0015",
@@ -106,15 +107,16 @@
       "id": "o05",
       "type": "ordinary",
       "must_abstain": false,
-      "recall@3": 0.0,
-      "recall@5": 0.0,
-      "answered_from_context": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
       "retrieved_ids": [
+        "annual-report-2023-24-0016",
         "student-handbook-jun-2026-0059",
-        "annual-report-2023-24-0126",
-        "annual-report-2023-24-0061",
-        "student-handbook-jun-2026-0060",
-        "annual-report-2023-24-0037"
+        "annual-report-2023-24-0159",
+        "annual-report-2023-24-0094",
+        "annual-report-2023-24-0028"
       ]
     },
     {

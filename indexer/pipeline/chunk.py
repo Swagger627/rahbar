@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from .extract import TABLE_ROW
 from .models import Chunk, Document
 
 DEFAULT_SECTION = "Untitled section"   # text that appears before the first heading
@@ -64,6 +65,13 @@ def _sections(doc: Document) -> list[tuple[str, list[tuple[int, str]]]]:
             next_line = next((later for later in lines[i + 1:] if later), "")
             if not line:
                 end_paragraph()
+            elif line.startswith(TABLE_ROW):
+                # One table row = one chunk, under the current heading, on its own page.
+                end_paragraph()
+                if current:
+                    sections.append((heading, current))
+                    current = []
+                sections.append((heading, [(page.page, line)]))
             elif _is_heading(line, next_line):
                 end_paragraph()
                 if current:

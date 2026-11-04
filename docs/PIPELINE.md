@@ -72,8 +72,25 @@ after:  5 Bachelor of Science (Civil Engineering) LHR
 ```
 
 All 80 ticks on the two pages were named, and none was left over. All 11 bachelor's rows
-were compared with the rendered page and match. The rows of p11 and p12 end up in one
-305-token chunk under "Chapter-1 Programs Offered and Campuses".
+were compared with the rendered page and match. At first the rows of p11 and p12 ended up
+in one 305-token chunk under "Chapter-1 Programs Offered and Campuses".
+
+**Since Step 3.5D, each tick-table row is written as one self-contained line:**
+
+```
+Table row: 5 Bachelor of Science (Civil Engineering) | marked under: LHR (columns: CFD ISB KHI LHR PWR)
+Table row: 6 Master of Science (Computer Networks & Security) | marked under: ISB KHI (columns: CFD ISB KHI LHR PWR)
+```
+
+- "marked under" lists the columns ticked in that row. An empty cell is simply not listed,
+  so no "no" is invented.
+- "columns" lists every heading on the table's header line, ticked or not.
+- A row whose name wraps onto two lines ("6 Master of Science (Computer Networks &" /
+  "Security)", with the ticks on a third line) is joined back into one row.
+- The chunker makes each such line its own chunk (see Chunking).
+- All 30 rows (11 bachelor's, 13 master's, 6 PhD) give the same campuses as the earlier
+  check against the rendered page.
+- Only pages with tick marks are affected: the annual report's pp 11-12.
 
 What could not be recovered:
 - Superscripts split off. The refund schedule's "10th day" comes out as "th" on one line
@@ -148,6 +165,13 @@ How it splits, in order:
    heading), `page` (where the chunk's new text starts), `doc_version` and `superseded`.
    IDs are stable: `<file stem>-<4-digit number>`, for example
    `academic-rules-handbook-jun-2026-0032`.
+6. **Table rows.** A line that starts with `Table row:` (written by extraction for tick-mark
+   tables) becomes a chunk of its own: the section heading, then that one row. Its page is
+   the row's page, and it never merges with, or overlaps, the text around it. Since Step
+   3.5D the index holds 431 chunks: the annual report's single 305-token table chunk became
+   30 row chunks plus 4 short pieces (the column header and the group labels "Master's
+   degree programs" / "PhD degree programs"). The other six documents are byte-identical.
+   The IDs stay sequential, so the annual report's later chunks moved up by 33 numbers.
 
 **Shipped: size 400 tokens, overlap 50 tokens** (ConfigMap `rahbar-config`).
 
@@ -727,7 +751,7 @@ o05 (which campus offers BS Civil Engineering) is not fixed by any of these. The
 sits in a 305-token list of programme names, and "Civil Engineering" appears in dozens of
 other annual-report chunks, so neither vectors nor keywords single it out. Chunking tables
 one row per chunk (with the column headings) would be the real fix. That is an indexer
-change, and is not done here.
+change, and was done in Step 3.5D (see "Table rows" below).
 
 **Neighbouring chunks: tried, not shipped.** For o07, the answer sits in the chunk just
 before the retrieved one (same section). Adding that genuine neighbour (score 0.749) to the
@@ -826,6 +850,92 @@ free RAM was only about 0.4 GB during that run, and the model time dominates.
 - questions without a clause are retrieved exactly as before;
 - an unknown clause adds nothing;
 - the floor exception applies only to the named clause, and abstention is unchanged.
+
+### Table rows (Step 3.5D, 2026-11-04)
+**Change.**
+- Extraction writes each tick-mark table row as one line naming its columns (see
+  Extraction).
+- The chunker makes each such line its own chunk (Chunking rule 6).
+- Nothing is special-cased for any question or programme. The rule applies to any page with
+  tick marks under printed column headings, which in this corpus means only the annual
+  report's pp 11-12.
+
+**Re-index.** The existing staged process was used:
+1. The old `rahbar` collection (398 rows, `nomic-embed-text`, 768) was checked first.
+2. A trial collection was built and compared on retrieval: recall 0.929 for the old one,
+   1.000 for the trial.
+3. Then `write_index` built `rahbar-staging`, checked it held 431 rows, and swapped it in.
+
+The new `rahbar` collection has 431 rows, metadata `embed_model: nomic-embed-text,
+dimension: 768`, and a new collection id. Spot checks:
+- the BS Civil Engineering row: p11, section "Chapter-1 Programs Offered and Campuses",
+  `2023-24`, not superseded;
+- the 2023 clause 5.8: p17, superseded;
+- clause 1.21: p10.
+
+The trial collection was deleted. The named volume `rahbar-chroma-real` is the same one
+(same creation time), and it was never recreated.
+
+**Retrieval (same API code, same golden set).** Only o05 retrieves anything different; every
+other question, including both must-abstain questions, gets the same passages as before.
+
+| | Before (398 chunks) | After (431 chunks) |
+| --- | --- | --- |
+| recall@3 / recall@5 | 0.929 / 0.929 | **1.0 / 1.0** |
+| recall@5 by type | ordinary 0.875, others 1.0 | **all 1.0** |
+| o05 best passage | an unrelated society list (0.694); the table chunk at rank 19 | **"Table row: 5 Bachelor of Science (Civil Engineering) \| marked under: LHR ..." at rank 1 (0.706, above the floor)** |
+
+**Answers, judged by hand with the same categories as Step 3.5C** (C correct and cited, M
+correct but mis-cited, I incomplete, W wrong, D declined):
+
+| Answerable attempts | C | M | I | W | D |
+| --- | --- | --- | --- | --- | --- |
+| before: 4 runs on the 398-chunk index (Step 3.5C) | 31/56 (55%) | 3 (5%) | 4 (7%) | 5 (9%) | 13 (23%) |
+| after: 3 runs on the 431-chunk index | 24/42 (57%) | 3 (7%) | 2 (5%) | 6 (14%) | 7 (17%) |
+
+- **o05: D W D D before, C C C after.** It answers "LHR" (once with "(columns: CFD ISB KHI
+  LHR PWR)" appended), citing "Chapter-1 Programs Offered and Campuses", p11. LHR is the
+  document's own code for the Lahore campus, so this counts as correct, although the golden
+  `expect` text says "Lahore".
+- The higher W count comes from o02 ("3.33" once, a misread grade table) and o04 ("60%"
+  twice, the wrong row of the refund table). Both received **exactly the same passages** as
+  before, so this is the model's run-to-run randomness, not an effect of the change. The
+  same o04 error was seen in Step 3.5B.
+- The change is kept because the only question whose evidence changed improved, and
+  nothing else changed.
+
+**Official run (`eval/results.json`):**
+- recall@3 1.0, recall@5 1.0;
+- citation validity 1.0 (15 of 15), abstention correctness 1.0;
+- 13 of 14 answerable questions answered (only o07 declined); 11 first time and 2 after
+  one retry; 0 fallbacks; no instruction-filter drops;
+- largest prompt 3,178 tokens;
+- 0.24-6.4 s per question (median about 2.4 s).
+
+The gate printed only "no baseline"; no baseline was written.
+
+**Still wrong or mis-cited** (all with unchanged evidence):
+- o01: correct, but cites the Prospectus instead of handbook clause 5.6.
+- o08: answers with clause 8.6 "deception" and cites the Code of Conduct; the real "untruth"
+  chunk is never retrieved.
+- o04 and o02: occasional misread table rows.
+- o06: sometimes "1 year" instead of "more than 1 year".
+- v01: sometimes answers from the Prospectus without saying "subsequent semester".
+- o07: declines, because its answer chunk is not retrieved.
+- i01: declines in most runs.
+
+**Known limitation of citations with row chunks.** A citation names a source, section and
+page, not a single chunk. All rows of one page share the same section and page, so a
+citation proves the answer came from that table page, not from which row.
+
+**Unit tests added:**
+- a tick row becomes one line listing its marked columns and all columns;
+- an unmarked column is listed as a column but not as marked;
+- a wrapped row name is joined back, without taking the group label above it;
+- each row is its own chunk with the section, its page, the version metadata and
+  sequential IDs;
+- rows never merge with or overlap the surrounding text;
+- pages without ticks are unchanged.
 
 ## Semantic cache
 Thresholds you tried, the false hit that ruled one out, the one you shipped.
