@@ -295,6 +295,20 @@ closest (`TOP_K` in the ConfigMap, default 5), closest first, with each chunk's 
 text and metadata. The API turns each hit into a `Passage`: `chunk_id`, `text`,
 `source`, `section`, `page` and `score`.
 
+**Exact clause references.** Embeddings blur exact numbers, so a question that names a
+clause ("clause 1.21", also "section", "rule", "article" or "item" followed by a number) gets
+one extra lookup:
+1. Chroma's built-in text filter (`where_document={"$contains": "1.21"}`) finds the chunks
+   that contain that string, under the same superseded rule as the vector search.
+2. A boundary check keeps only real matches ("1.21" and "1.21.3", but not "11.21" or
+   "1.215"), and the closest one is taken.
+3. That chunk goes first, then the vector results, cut to `k` in total.
+
+Its `score` stays its true cosine similarity (the real clause 1.21 chunk scores 0.643), so
+the list is ordered "exact clause match first, then by score". A bare number ("a CGPA below
+2.00") is not a clause reference, and questions without one are retrieved exactly as
+before. See "Retrieval improvement" below for why this simple method was chosen.
+
 **Similarity scores.** Chroma reports cosine *distance* (0 = same direction, larger =
 further apart). The API reports `score = 1 - distance`, so a higher score means a closer
 match, and 1.0 means the vectors point the same way. A score says how close two vectors
@@ -453,7 +467,10 @@ The steps for one question:
 2. **Relevance floor.** Passages with `score < RELEVANCE_FLOOR` are dropped. If none is
    left, the API abstains at once and the model is not called. The default is `0.65`,
    measured on real scores (see "Relevance floor, measured" and "Real answer evaluation").
-   It is not in the ConfigMap yet; that is the deployment step. Every `answered` log line
+   One explicit exception: a passage that contains a clause the question names ("clause
+   1.21") is kept even below the floor, because exact text is stronger evidence than a
+   vector score. A passage containing a *different* clause number gets no exception. The
+   floor is not in the ConfigMap yet; that is the deployment step. Every `answered` log line
    records the scores and the floor.
 3. **Drop passages that instruct the AI.** A passage whose text addresses an AI ("ignore
    all previous instructions", "system instruction", "instruction to the AI", "you are an
@@ -624,6 +641,13 @@ questions, so those runs behave as the final code). Each answer was compared wit
   o08 twice);
 - 10 declined (36%).
 
+**Correction (Step 3.5C).** A stricter re-check found that o01 is mis-cited. Its correct
+answer ("automatically closed") comes from handbook clause 5.6 (chunk 0032, retrieved at
+rank 1), but every run cited Prospectus chunks that do not contain it. So the strict figure
+for these two runs is 12 correct and faithfully cited, plus 1 correct but mis-cited. The
+before-and-after comparison in "Retrieval improvement" uses the stricter rule for both
+sides.
+
 The model is not stable even at temperature 0.2: o01, o02, v01 and v02 were answered in one
 run and declined in the other.
 
@@ -669,14 +693,139 @@ is shown, not tied to any question.
 was rejected in the final runs) or the floor (it removed only a02's irrelevant passages).
 
 **What would help next (not built here):**
-- hybrid retrieval, so exact terms like "1.21" can be found;
-- giving neighbouring chunks of the same section together (o07, o08);
+- hybrid retrieval, so exact terms like "1.21" can be found (done in Step 3.5C, below);
+- giving neighbouring chunks of the same section together (o07, o08; tried in Step 3.5C,
+  not shipped);
 - a larger or stronger model for the table and faithfulness errors;
 - or a second check that compares each answer with its cited passage.
 
 **Memory.** Available system RAM was 0.4-1.7 GB during the runs, mostly taken by Chrome
 and Docker's VM. Ollama held under 200 MB of RAM and about 3.0 GB of GPU memory, and Chroma
 50-90 MB. The questions ran one at a time.
+
+### Retrieval improvement (Step 3.5C, 2026-11-04)
+Goal: find the real evidence more often, without hard-coding any question. The real index,
+models and settings were unchanged: 398 chunks on volume `rahbar-chroma-real`,
+`nomic-embed-text`, `llama3.2:3b` on Ollama 0.40.14, floor 0.65, `TOP_K=5`, temperature
+0.2.
+
+**What was tried, measured on retrieval only first (real vectors, no LLM, 14 answerable
+golden questions):**
+
+| Method | recall@3 | recall@5 | Notes |
+| --- | --- | --- | --- |
+| vector only (before) | 0.857 | 0.857 | misses o05 (rank 19), e01 (rank 8) |
+| rerank the 20 nearest by keyword overlap (4 variants, reciprocal-rank fusion) | 0.714-0.857 | 0.857 | e01 moved up (to rank 3-4), but o04 fell out of the top 5 ("refunded" does not match "refund") |
+| BM25 keywords over all 398 chunks + vector, fused | 0.750 | 0.786 | o04 and o07 fell out |
+| **exact clause references (shipped)** | **0.929** | **0.929** | e01 found; no question lost anything |
+
+Plain keyword matching on a small corpus mostly adds noise: common words like "fee",
+"campus" and "student" appear everywhere. Only the explicit clause number was a precise
+enough signal.
+
+o05 (which campus offers BS Civil Engineering) is not fixed by any of these. The answer
+sits in a 305-token list of programme names, and "Civil Engineering" appears in dozens of
+other annual-report chunks, so neither vectors nor keywords single it out. Chunking tables
+one row per chunk (with the column headings) would be the real fix. That is an indexer
+change, and is not done here.
+
+**Neighbouring chunks: tried, not shipped.** For o07, the answer sits in the chunk just
+before the retrieved one (same section). Adding that genuine neighbour (score 0.749) to the
+evidence, 3 tries each with the real model:
+- with the neighbour: 1 correct ("unless it is quoted and referenced"), 1 new off-topic
+  answer, 1 fallback;
+- without it: 2 declined, 1 distorted.
+
+o08's top passage has no same-section neighbour, so nothing changed there. One correct in
+three is not a measurable benefit, and the feature would add about 350 words to the prompt
+and another floor exception. So it was left out.
+
+**Before and after, real answers.** All 16 golden questions went through `POST /api/ask`, one
+at a time:
+- *before*: 3 runs of the Step 3.5B code (two from Step 3.5B, plus one new run from a git
+  worktree of commit `f25107e`);
+- *after*: 4 runs of the new code.
+
+Every answer was read against the passages it cites. The categories are:
+- **C** correct, and a cited passage contains it;
+- **M** correct content, but no cited passage contains it;
+- **I** incomplete (e.g. "1 year" for "more than 1 year", or "80%" without the 100% rule);
+- **W** wrong or distorted;
+- **D** declined.
+
+| Answerable attempts | C | M | I | W | D |
+| --- | --- | --- | --- | --- | --- |
+| before (3 runs x 14 = 42) | 17 (40%) | 2 (5%) | 1 (2%) | 8 (19%) | 14 (33%) |
+| after (4 runs x 14 = 56) | 31 (55%) | 3 (5%) | 4 (7%) | 5 (9%) | 13 (23%) |
+
+Per question (before runs | after runs):
+
+| Id | before | after | Retrieval changed? |
+| --- | --- | --- | --- |
+| o01 | M D M | D M M M | no |
+| o02 | C D C | C C C C | no |
+| o03 | C C C | C C C C | no |
+| o04 | W C W | C C C C | no |
+| o05 | D D D | D W D D | no ("The Islamabad Campus", wrong, once) |
+| o06 | C C C | C D I I | no (one 120 s model timeout gave the fallback; "1 year" twice) |
+| o07 | W W W | D D D D | no |
+| o08 | W W W | W W W W | no |
+| v01 | C D D | C C D I | no |
+| v02 | D C D | C C C C | no |
+| **e01** | **D D D** | **C C C C** | **yes: clause 1.21 now retrieved** |
+| e02 | C C C | C C C C | order only |
+| e03 | C C C | C C C C | no |
+| i01 | D D I | I D D D | no |
+
+**Read this table with care.**
+- Only e01 and e02 retrieve anything different; every other question received exactly the
+  same chunks and the same prompt before and after. So the changes on o04, o07, v02, o05
+  and o06 are run-to-run randomness of the model, not effects of this step.
+- The improvement this step can claim is **e01: declined 3/3 before, correct 4/4 after**
+  ("Students are required to maintain 100% attendance ...", citing clause 1.21). That is
+  about one question in fourteen.
+- Without e01, correctness still moved from 44% to 52% on identical inputs. That shows how
+  large the noise is with this few runs.
+
+**Official run (final code): `eval/results.json`.**
+
+| Metric | Before (Step 3.5B) | After |
+| --- | --- | --- |
+| recall@3 / recall@5 | 0.857 / 0.857 | **0.929 / 0.929** |
+| recall@5, exact-term questions | 0.667 | **1.0** |
+| citation validity (automatic) | 1.0 | 1.0 (12 of 12) |
+| abstention correctness | 1.0 | 1.0 (a01, a02) |
+| answerable questions declined | 4 (o05, o07, e01, i01) | 3 (o01, o05, o07) |
+| fallbacks / instruction drops | 0 / 0 | 0 / 0 |
+| largest prompt | 3,178 tokens | 2,948 tokens |
+
+recall@k still counts only the first `k` passages, and the final list is never longer than
+`k`. The gate again printed only "no baseline"; no baseline was written.
+
+**Safety checks unchanged.**
+- Citation validity stayed at 100% in all runs.
+- Both must-abstain questions were declined in all 7 runs.
+- i01 never said attendance is optional.
+- The poisoned-passage filter and the superseded label are untouched. Their unit tests
+  pass, and a history question that names a clause searches both editions and still labels
+  the old one.
+
+**Latency.** The extra exact lookup costs about 30 ms: `retrieve()` took 429 ms for a
+clause question against 396 ms for one without, as medians of 5. End-to-end times in the
+official run were 0.44-6.8 s (median 3.8 s). That is slower than Step 3.5B's 2.6 s, but
+free RAM was only about 0.4 GB during that run, and the model time dominates.
+
+**Unit tests added:**
+- clause references are found only when named;
+- number boundaries are respected;
+- a named clause comes first with its true score and stays exactly `k`;
+- a clause inside table text is found;
+- superseded chunks stay out of ordinary questions, and a history question searches both
+  editions;
+- only one exact match is taken per clause;
+- questions without a clause are retrieved exactly as before;
+- an unknown clause adds nothing;
+- the floor exception applies only to the named clause, and abstention is unchanged.
 
 ## Semantic cache
 Thresholds you tried, the false hit that ruled one out, the one you shipped.

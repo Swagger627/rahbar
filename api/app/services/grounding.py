@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 
+from ..retrieval.chroma import clause_refs, mentions_clause
 from ..schemas import Answer, Citation, Passage
 
 # The corpus does not cover the question (honest abstention).
@@ -35,9 +36,13 @@ INSTRUCTION_LIKE = re.compile(
     re.IGNORECASE)
 
 
-def above_floor(passages: list[Passage], floor: float) -> list[Passage]:
-    """The passages relevant enough to show the model."""
-    return [p for p in passages if p.score >= floor]
+def above_floor(passages: list[Passage], floor: float, question: str = "") -> list[Passage]:
+    """The passages relevant enough to show the model: score >= floor, or the passage
+    contains a clause the question names ("clause 1.21"). Exact text is stronger evidence
+    than vector similarity, which blurs numbers (the real clause 1.21 chunk scored 0.643)."""
+    asked = clause_refs(question)
+    return [p for p in passages
+            if p.score >= floor or any(mentions_clause(p.text, n) for n in asked)]
 
 
 def without_instructions(passages: list[Passage]) -> tuple[list[Passage], list[str]]:

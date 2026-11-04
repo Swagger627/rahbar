@@ -27,6 +27,25 @@ HISTORY_WORDS = re.compile(
     r"changed?|compare|comparison|difference|differ)\b", re.IGNORECASE)
 # A plain year such as "2023", but not an academic-year range such as "2026-27".
 YEAR = re.compile(r"\b(20\d\d)\b(?!\s*-\s*\d)")
+# An explicit clause reference in a question: "clause 1.21", "section 5.4", "rule 3.2.1".
+# Embeddings blur exact numbers, so these are also looked up as exact text. A bare number
+# ("a CGPA below 2.00") is not a clause reference.
+CLAUSE_REF = re.compile(r"\b(?:clause|section|rule|article|item)\s+(\d+(?:\.\d+)+)\b",
+                        re.IGNORECASE)
+# Only the closest chunk that contains the clause: clause numbers repeat across documents
+# ("5.4" is also a clause of the entrepreneurship policy), so a second match is mostly noise.
+EXACT_PER_CLAUSE = 1
+
+
+def clause_refs(question: str) -> list[str]:
+    """The clause numbers a question names explicitly, e.g. ["1.21"]."""
+    return CLAUSE_REF.findall(question)
+
+
+def mentions_clause(text: str, number: str) -> bool:
+    """True when the text contains exactly this clause number: "1.21" matches "1.21 Students"
+    and "1.21.3", but not "11.21" or "1.215"."""
+    return re.search(rf"(?<![\d.]){re.escape(number)}(?!\d)", text) is not None
 
 
 class ChromaRetriever:
@@ -42,20 +61,29 @@ class ChromaRetriever:
 
         Ordinary questions search current documents only. A question that asks about an
         older edition or a change gets the best passages from both editions, and every
-        superseded passage is labelled as such in its text."""
+        superseded passage is labelled as such in its text.
+
+        A clause the question names ("clause 1.21") is also looked up as exact text, and
+        the chunks that really contain it come first. Every score stays the true cosine
+        similarity, so the list is in that order: exact clause matches, then by score."""
         collection, dimension = self._open_collection()
         vector = self._embed_question(question, dimension)
-        if not self._asks_about_history(question, collection):
-            return self._search(collection, vector, k, superseded=False)
-        current = self._search(collection, vector, k, superseded=False)
-        old = self._search(collection, vector, k, superseded=True)
-        best = sorted(current + old, key=lambda p: p.score, reverse=True)[:k]
-        # A comparison needs both editions: if one is missing from the top k, its best
-        # passage takes the last place.
-        for side in (current, old):
-            if side and k > 1 and not any(p in best for p in side):
-                best[-1] = side[0]
-        return sorted(best, key=lambda p: p.score, reverse=True)
+        history = self._asks_about_history(question, collection)
+        exact = self._exact_clause_matches(collection, vector, question, history)
+        if not history:
+            ranked = self._search(collection, vector, k, superseded=False)
+        else:
+            current = self._search(collection, vector, k, superseded=False)
+            old = self._search(collection, vector, k, superseded=True)
+            ranked = sorted(current + old, key=lambda p: p.score, reverse=True)[:k]
+            # A comparison needs both editions: if one is missing from the top k, its best
+            # passage takes the last place.
+            for side in (current, old):
+                if side and k > 1 and not any(p in ranked for p in side):
+                    ranked[-1] = side[0]
+            ranked.sort(key=lambda p: p.score, reverse=True)
+        found = {p.chunk_id for p in exact}
+        return (exact + [p for p in ranked if p.chunk_id not in found])[:k]
 
     def check_index(self) -> dict[str, object]:
         """The readiness checks: Chroma answers, the collection exists and is not empty,
@@ -151,11 +179,33 @@ class ChromaRetriever:
                                for m in rows["metadatas"] or []}
         return any(year in self._old_years for year in YEAR.findall(question))
 
-    def _search(self, collection: Any, vector: list[float], k: int,
-                superseded: bool) -> list[Passage]:
+    def _exact_clause_matches(self, collection: Any, vector: list[float], question: str,
+                              history: bool) -> list[Passage]:
+        """For each clause the question names, the chunks whose text contains that exact
+        number (Chroma's $contains text filter), closest first, at most EXACT_PER_CLAUSE.
+        The same superseded rule applies as for the vector search."""
+        matches: list[Passage] = []
+        for number in clause_refs(question):
+            # $contains "1.21" also matches "11.21", so fetch a few extra and keep only
+            # real matches.
+            found = self._search(collection, vector, 3 * EXACT_PER_CLAUSE,
+                                 superseded=None if history else False, contains=number)
+            real = [p for p in found if mentions_clause(p.text, number)
+                    and p.chunk_id not in {m.chunk_id for m in matches}]
+            matches += real[:EXACT_PER_CLAUSE]
+        return matches
+
+    def _search(self, collection: Any, vector: list[float], k: int, superseded: bool | None,
+                contains: str | None = None) -> list[Passage]:
+        """The k closest chunks. superseded=None searches both editions; `contains` keeps
+        only chunks whose text contains that string."""
+        filters: dict[str, Any] = {}
+        if superseded is not None:
+            filters["where"] = {"superseded": superseded}
+        if contains is not None:
+            filters["where_document"] = {"$contains": contains}
         found = collection.query(query_embeddings=[vector], n_results=k,
-                                 where={"superseded": superseded},
-                                 include=["documents", "metadatas", "distances"])
+                                 include=["documents", "metadatas", "distances"], **filters)
         passages = []
         for chunk_id, text, meta, distance in zip(found["ids"][0], found["documents"][0],
                                                   found["metadatas"][0], found["distances"][0]):

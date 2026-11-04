@@ -44,6 +44,7 @@ def cosine_distance(a: list[float], b: list[float]) -> float:
 class FakeCollection:
     def __init__(self, rows: dict[str, Any], metadata: dict[str, Any]) -> None:
         self.rows, self.metadata, self.queries = rows, metadata, []
+        self.text_queries: list[Any] = []
 
     def count(self) -> int:
         return len(self.rows)
@@ -54,12 +55,18 @@ class FakeCollection:
                 if not where or all(r[2].get(k) == v for k, v in where.items())][:limit]
         return {"embeddings": [r[0] for r in rows], "metadatas": [r[2] for r in rows]}
 
-    def query(self, query_embeddings: list[list[float]], n_results: int,
-              where: dict[str, Any], include: list[str]) -> dict[str, Any]:
-        self.queries.append(where)
+    def query(self, query_embeddings: list[list[float]], n_results: int, include: list[str],
+              where: dict[str, Any] | None = None,
+              where_document: dict[str, str] | None = None) -> dict[str, Any]:
+        if where_document is None:
+            self.queries.append(where)          # vector searches
+        else:
+            self.text_queries.append((where, where_document))
+        contains = (where_document or {}).get("$contains", "")
         hits = sorted((cosine_distance(query_embeddings[0], v), i, t, m)
                       for i, (v, t, m) in self.rows.items()
-                      if all(m.get(k) == val for k, val in where.items()))[:n_results]
+                      if all(m.get(k) == val for k, val in (where or {}).items())
+                      and contains in t)[:n_results]
         return {"ids": [[h[1] for h in hits]], "documents": [[h[2] for h in hits]],
                 "metadatas": [[h[3] for h in hits]], "distances": [[h[0] for h in hits]]}
 
@@ -240,3 +247,107 @@ def test_check_index_reports_a_healthy_index() -> None:
 def test_check_index_names_the_failed_check(retriever: Any, message: str) -> None:
     with pytest.raises(RuntimeError, match=message):
         retriever().check_index()
+
+
+# ------------------------------------------------------------------ exact clause references
+
+CLAUSES = {
+    # The clause the question names, far from the question in vector space (score 0.0).
+    "rules-2026-1.21": ([0.0, 0.0, 1.0], "Attendance Requirements\n1.21 Students must attend "
+                        "100% of classes; up to 20% absence may be condoned.",
+                        {"source": "academic-rules-handbook-jun-2026.pdf",
+                         "section": "Attendance Requirements", "page": 10,
+                         "doc_version": "2026-06", "superseded": False}),
+    "rules-2023-1.21": ([0.0, 0.1, 1.0], "Attendance\n1.21 Old attendance rule.",
+                        {"source": "undergraduate-academic-rules-aug-2023.pdf",
+                         "section": "Attendance", "page": 7, "doc_version": "2023-08",
+                         "superseded": True}),
+    # Contains "1.21" only inside a longer number: must not count as clause 1.21.
+    "report-table": ([0.1, 0.0, 0.9], "KARACHI CAMPUS\nGrowth 11.21% and ratio 1.215 in the table.",
+                     {"source": "annual-report-2023-24.pdf", "section": "KARACHI CAMPUS",
+                      "page": 45, "doc_version": "2023-24", "superseded": False}),
+    "fees-table": ([0.0, 1.0, 0.0], "5. Miscellaneous Fees\nDescription Fee Transcript Rs. 300 "
+                   "Retake Fee Rs. 2,000 (see clause 4.3 for refunds)",
+                   {"source": "prospectus-2026-fee-information.pdf",
+                    "section": "5. Miscellaneous Fees", "page": 1, "doc_version": "2026-27",
+                    "superseded": False}),
+    **{f"filler-{n}": ([1.0, 0.0, 0.0], f"Filler {n}", {
+        "source": "student-handbook-jun-2026.pdf", "section": f"Filler {n}", "page": n,
+        "doc_version": "2026-06", "superseded": False}) for n in range(5)},
+}
+
+
+@pytest.mark.parametrize("question, refs", [
+    ("What does clause 1.21 of the academic rules require?", ["1.21"]),
+    ("Explain Section 5.4 and rule 3.2.1.", ["5.4", "3.2.1"]),
+    ("What happens if my CGPA stays below 2.00?", []),          # a bare number is no clause
+    ("What is the fee in 2026-27?", []),
+])
+def test_clause_references_are_found_only_when_named(question: str, refs: list[str]) -> None:
+    assert chroma_module.clause_refs(question) == refs
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("1.21 Students must attend", True),
+    ("as stated in clause 1.21.", True),
+    ("sub-clause 1.21.3 applies", True),
+    ("growth of 11.21%", False),
+    ("a ratio of 1.215", False),
+])
+def test_exact_clause_matching_respects_number_boundaries(text: str, expected: bool) -> None:
+    assert chroma_module.mentions_clause(text, "1.21") is expected
+
+
+def test_named_clause_comes_first_with_its_true_score(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_ollama(monkeypatch, [1.0, 0.0, 0.0])          # the vector search prefers the fillers
+    retriever = make_retriever(CLAUSES)
+    passages = retriever.retrieve("What does clause 1.21 of the academic rules require?", k=5)
+    assert len(passages) == 5                           # still exactly TOP_K
+    assert passages[0].chunk_id == "rules-2026-1.21"
+    assert passages[0].score == pytest.approx(0.0)      # the real cosine, never raised
+    assert "report-table" not in [p.chunk_id for p in passages]   # 11.21 / 1.215 are not 1.21
+    assert "rules-2023-1.21" not in [p.chunk_id for p in passages]   # superseded stays out
+    assert retriever._client.collection.text_queries == [
+        ({"superseded": False}, {"$contains": "1.21"})]
+
+
+def test_exact_clause_inside_table_text_is_found(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_ollama(monkeypatch, [1.0, 0.0, 0.0])
+    passages = make_retriever(CLAUSES).retrieve("What does clause 4.3 say?", k=3)
+    assert passages[0].chunk_id == "fees-table" and passages[0].section == "5. Miscellaneous Fees"
+
+
+def test_named_clause_in_a_history_question_searches_both_editions(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_ollama(monkeypatch, [0.0, 0.1, 1.0])          # closest to the 2023 clause
+    retriever = make_retriever(CLAUSES)
+    passages = retriever.retrieve("What did clause 1.21 say in the 2023 rules?", k=5)
+    assert retriever._client.collection.text_queries == [(None, {"$contains": "1.21"})]
+    assert passages[0].chunk_id == "rules-2023-1.21"
+    assert passages[0].text.startswith("[SUPERSEDED: 2023-08 edition")   # still labelled
+
+
+def test_only_one_exact_match_is_taken_per_clause(monkeypatch: pytest.MonkeyPatch) -> None:
+    rows = dict(CLAUSES)
+    rows["policy-1.21"] = ([0.0, 0.0, 1.0], "Policy\n1.21 A different document's clause 1.21.",
+                           {"source": "policy.pdf", "section": "Policy", "page": 1,
+                            "doc_version": "2022", "superseded": False})
+    fake_ollama(monkeypatch, [1.0, 0.0, 0.0])
+    passages = make_retriever(rows).retrieve("What does clause 1.21 require?", k=5)
+    holding = [p.chunk_id for p in passages if "1.21" in p.text]
+    assert len(holding) == 1                            # the closest one, no second match
+
+
+def test_without_a_clause_reference_retrieval_is_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_ollama(monkeypatch, [0.0, 1.0, 0.0])
+    retriever = make_retriever(CLAUSES)
+    passages = retriever.retrieve("What are the miscellaneous fees?", k=3)
+    assert passages[0].chunk_id == "fees-table"
+    assert retriever._client.collection.text_queries == []        # no exact lookup at all
+    assert [p.score for p in passages] == sorted([p.score for p in passages], reverse=True)
+
+
+def test_a_named_clause_that_no_chunk_contains_adds_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_ollama(monkeypatch, [1.0, 0.0, 0.0])
+    passages = make_retriever(CLAUSES).retrieve("What does clause 9.99 say?", k=3)
+    assert [p.chunk_id for p in passages] == ["filler-0", "filler-1", "filler-2"]

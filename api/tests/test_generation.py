@@ -356,3 +356,31 @@ def test_ask_with_the_ollama_provider_never_returns_500(monkeypatch: pytest.Monk
     assert down.json()["provider"] == "ollama"
     assert up.status_code == 200 and up.json()["answered_from_context"] is True
     assert "reasoning" not in up.json() and "HIDDEN" not in up.text
+
+
+# ------------------------------------------------------------------ floor and exact clauses
+
+CLAUSE_121 = ATTENDANCE.model_copy(update={"chunk_id": "rules-0014", "score": 0.643})
+FLOOR_065 = replace(SETTINGS, relevance_floor=0.65)      # the shipped floor
+
+
+def test_a_passage_with_the_named_clause_passes_the_floor(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent = fake_ollama(monkeypatch, reply())
+    response = ask([CLAUSE_121], settings=FLOOR_065,
+                   question="What does clause 1.21 of the academic rules require?")
+    assert len(sent) == 1 and "1.21 Students must attend" in sent[0]["messages"][1]["content"]
+    assert response.answered_from_context is True
+    assert response.retrieved[0].score == pytest.approx(0.643)      # reported as it really is
+
+
+def test_the_same_low_passage_without_a_named_clause_is_still_below_the_floor(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    sent = fake_ollama(monkeypatch)
+    response = ask([CLAUSE_121], settings=FLOOR_065, question="What is the attendance requirement?")
+    assert sent == [] and response.answer == NOT_COVERED            # abstention unchanged
+
+
+def test_naming_a_different_clause_does_not_lift_the_floor(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent = fake_ollama(monkeypatch)
+    response = ask([CLAUSE_121], settings=FLOOR_065, question="What does clause 5.4 require?")
+    assert sent == [] and response.answer == NOT_COVERED

@@ -24,7 +24,8 @@ def answer_question(
     question: str, retriever: Retriever, provider: LLMProvider, settings: Settings
 ) -> AskResponse:
     passages = retriever.retrieve(question, k=settings.top_k)
-    evidence, dropped = without_instructions(above_floor(passages, settings.relevance_floor))
+    evidence, dropped = without_instructions(
+        above_floor(passages, settings.relevance_floor, question))
     if dropped:
         log.warning("passages with AI instructions dropped", extra={"chunk_ids": dropped})
     if evidence:
