@@ -11,6 +11,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: rahbar
+  annotations:
+    # An answer can take up to 120 s (the model timeout) plus one retry on a slow CPU;
+    # nginx's default of 60 s would cut it off with a 504.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
 spec:
   ingressClassName: nginx
   rules:

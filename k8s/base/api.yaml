@@ -1,7 +1,8 @@
 # The RAHBAR API (sections 4.1 to 4.7): three copies of the FastAPI service behind the
 # `api` Service. It only READS the index; indexing is the indexer Job's work (4.2).
 #
-# Week 1: the ConfigMap sets RETRIEVER=stub and LLM_PROVIDER=stub.
+# The ConfigMap sets the real pipeline: RETRIEVER=chroma, LLM_PROVIDER=ollama-host and a
+# shared Redis cache (REDIS_URL), so all three replicas share one cache.
 # /readyz (api/app/routes/health.py): with RETRIEVER=chroma it answers 503 unless Chroma
 # answers, the collection exists and is not empty, and its embed_model and dimension
 # match. It also checks Redis once REDIS_URL is set. With RETRIEVER=stub it is always ready.
@@ -81,6 +82,9 @@ spec:
               path: /readyz
               port: http
             periodSeconds: 10
+            # /readyz makes four quick calls to Chroma and pings Redis; the default 1 s
+            # timeout leaves no room on a busy laptop.
+            timeoutSeconds: 3
             failureThreshold: 3
           # Wait a few seconds before stopping, so the Service takes this pod out of
           # rotation before it stops accepting connections (section 4.6).

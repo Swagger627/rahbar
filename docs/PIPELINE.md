@@ -223,9 +223,9 @@ Code: `indexer/pipeline/embed.py`.
 
 - **Model:** whatever `EMBED_MODEL` says. The pin lives in one place, the ConfigMap
   `rahbar-config`, which both the indexer and the API read. The intended model is
-  `nomic-embed-text` on Ollama (the code default). The ConfigMap still holds `dummy-768`
-  from the week-1 dummy index, and must be changed to the real model before the real
-  indexer runs. The real pipeline refuses `dummy-768` with a clear error, so a fake model
+  `nomic-embed-text` on Ollama (the code default, and the ConfigMap value since Step 4.1;
+  it held `dummy-768` for the week-1 dummy index before that). The real pipeline refuses
+  `dummy-768` with a clear error, so a fake model
   name can never produce a "real" index.
 - **Call:** `POST {OLLAMA_URL}/api/embed` with `{"model": EMBED_MODEL, "input": [16 chunk
   texts], "truncate": false}`, 16 chunks per request (398 chunks take 25 requests). The

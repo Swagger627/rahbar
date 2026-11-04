@@ -3,23 +3,31 @@
 # indexer/pipeline/config.py), so one image runs everywhere. Secrets never go here:
 # the LLM key lives in a Kubernetes Secret created from the command line.
 #
-# Week-1 values: the stub retriever and stub LLM, and the dummy index's model name, so
-# the cluster can be proved before the real pipeline exists. Later steps switch
-# RETRIEVER and LLM_PROVIDER, set EMBED_MODEL to the real model, and add the
-# relevance floor and cache threshold once they have been measured.
+# These are the REAL settings: Chroma retrieval, llama3.2:3b through Ollama on the host
+# laptop (ollama-host), and the values measured in docs/PIPELINE.md.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: rahbar-config
 data:
-  RETRIEVER: "stub"
-  LLM_PROVIDER: "stub"
+  RETRIEVER: "chroma"
+  LLM_PROVIDER: "ollama-host"
   # The embedding pin (section 4.4): the api and the indexer must read the same value.
-  EMBED_MODEL: "dummy-768"
+  # The api refuses to become ready against an index built with another model.
+  EMBED_MODEL: "nomic-embed-text"
+  LLM_MODEL: "llama3.2:3b"
+  # Ollama runs on the Windows host, bound to 127.0.0.1 only; minikube's docker driver
+  # reaches it through this name (docs/DEPLOYMENT.md, "Ollama").
+  OLLAMA_URL: "http://host.minikube.internal:11434"
   CHROMA_HOST: "chroma"
   CHROMA_PORT: "8000"
   CHROMA_COLLECTION: "rahbar"
+  # Where the indexer reads the seven PDFs and _index.json (the corpus PVC).
+  CORPUS_DIR: "/corpus"
   TOP_K: "5"
+  # Passages below this similarity are not shown to the model; measured on the golden
+  # set: every relevant top-5 passage scored >= 0.697, the hostel question 0.585.
+  RELEVANCE_FLOOR: "0.65"
   # Low temperature because answers must be factual and valid JSON; 0.2 still lets
   # the model phrase an answer naturally.
   TEMPERATURE: "0.2"
@@ -27,4 +35,10 @@ data:
   # model's subword tokens. The shipped values come from our experiment.
   CHUNK_SIZE: "400"
   CHUNK_OVERLAP: "50"
+  # Semantic cache (section 3.3): all api replicas share this Redis. A hit needs
+  # similarity >= 0.90 and the same numbers/codes; 0.80 gave a false hit ("hostel fee"
+  # reusing a "tuition fee" answer). No password on this in-cluster Redis.
+  REDIS_URL: "redis://redis:6379/0"
+  CACHE_THRESHOLD: "0.90"
+  CACHE_TTL_SECONDS: "3600"
   LOG_LEVEL: "INFO"

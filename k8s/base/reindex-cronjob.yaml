@@ -3,11 +3,12 @@
 #   kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
 #
 # It runs the REAL pipeline (python -m pipeline.run, no --dummy), the only writer to
-# Chroma.
+# Chroma, on the same corpus PVC as the first indexer Job (indexer-job.yaml), and checks
+# every PDF's SHA-256 before indexing.
 #
-# SUSPENDED on purpose: the real extract/clean/chunk/embed/store stages and the corpus
-# volume do not exist yet. Set `suspend: false` only after both work. Until then a
-# manual run stops with "no documents found in /corpus" before it touches Chroma.
+# SUSPENDED on purpose until the first real index has been proven on the live cluster.
+# Then turn the weekly schedule on (docs/DEPLOYMENT.md, "Scheduled re-index"):
+#   kubectl patch cronjob reindex -n rahbar -p '{"spec":{"suspend":false}}'
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -66,8 +67,15 @@ spec:
                   drop:
                     - ALL
               volumeMounts:
-                - name: tmp
+                - name: corpus
+                  mountPath: /corpus
+                  readOnly: true
+                - name: tmp          # pdf2image writes page images here for OCR
                   mountPath: /tmp
           volumes:
+            - name: corpus
+              persistentVolumeClaim:
+                claimName: corpus
+                readOnly: true
             - name: tmp
               emptyDir: {}

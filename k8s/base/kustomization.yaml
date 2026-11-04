@@ -8,6 +8,7 @@ resources:
   - configmap.yaml
   - chroma-statefulset.yaml
   - redis.yaml
+  - corpus-pvc.yaml
   - api.yaml
   - ui.yaml
   - reindex-cronjob.yaml
@@ -15,5 +16,8 @@ resources:
   - ingress.yaml
   - hpa.yaml
   - networkpolicy.yaml
-# secret.placeholder.yaml is deliberately NOT listed: applying it would replace the
-# real Secret with REPLACE_ME. Create the real one with `kubectl create secret`.
+# Deliberately NOT listed:
+# - secret.placeholder.yaml: applying it would replace the real Secret with REPLACE_ME.
+#   Create the real one with `kubectl create secret`.
+# - corpus-loader.yaml and indexer-job.yaml: one-time steps, run by hand in that order
+#   after the corpus is ready (docs/DEPLOYMENT.md).

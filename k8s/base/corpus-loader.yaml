@@ -1,0 +1,63 @@
+# ONE-TIME helper: a pod that mounts the corpus PVC read-write, so the verified PDFs on
+# the laptop can be copied in with `kubectl cp`. NOT listed in kustomization.yaml; apply
+# it by hand, copy, verify, then delete it (docs/DEPLOYMENT.md, "Load the corpus"):
+#
+#   kubectl apply -f k8s/base/corpus-loader.yaml
+#   kubectl cp corpus/raw/. rahbar/corpus-loader:/corpus
+#   kubectl exec -n rahbar corpus-loader -- python -m pipeline.run --verify-corpus
+#   kubectl delete pod corpus-loader -n rahbar
+#
+# It uses the indexer image (it has tar for `kubectl cp`, and the checksum check) and
+# just sleeps. No NetworkPolicy allows it any traffic, and it needs none: `kubectl cp`
+# and `kubectl exec` go through the Kubernetes API, not the pod network.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: corpus-loader
+  namespace: rahbar
+  labels:
+    app: corpus-loader
+spec:
+  restartPolicy: Never
+  activeDeadlineSeconds: 3600        # it removes itself from service after an hour
+  serviceAccountName: indexer
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: loader
+      image: rahbar-indexer:dev
+      imagePullPolicy: IfNotPresent
+      command: ["sleep", "3600"]
+      env:
+        - name: CORPUS_DIR
+          value: /corpus
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+      volumeMounts:
+        - name: corpus
+          mountPath: /corpus
+        - name: tmp
+          mountPath: /tmp
+  volumes:
+    - name: corpus
+      persistentVolumeClaim:
+        claimName: corpus
+    - name: tmp
+      emptyDir: {}

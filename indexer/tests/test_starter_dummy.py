@@ -65,3 +65,30 @@ def test_discover_reads_fixture_front_matter() -> None:
     found = {p.name: (version, old) for p, version, old in discover(str(fixtures))}
     assert found["academic-rules-2023.md"] == ("2023", True)
     assert found["academic-rules-2026.md"] == ("2026", False)
+
+
+def test_corpus_checksums_are_verified(tmp_path: Path) -> None:
+    import hashlib
+    import json
+
+    import pytest
+
+    from pipeline.run import verify_corpus
+
+    pdf = tmp_path / "rules.pdf"
+    pdf.write_bytes(b"real rules")
+    good = hashlib.sha256(b"real rules").hexdigest()
+    (tmp_path / "_index.json").write_text(json.dumps([{"file": "rules.pdf", "sha256": good}]))
+    assert verify_corpus(str(tmp_path)) == 1
+    pdf.write_bytes(b"tampered rules")
+    with pytest.raises(RuntimeError, match="corpus file changed: rules.pdf"):
+        verify_corpus(str(tmp_path))
+    pdf.unlink()
+    with pytest.raises(RuntimeError, match="corpus file missing: rules.pdf"):
+        verify_corpus(str(tmp_path))
+
+
+def test_no_index_file_means_nothing_to_verify(tmp_path: Path) -> None:
+    from pipeline.run import verify_corpus
+
+    assert verify_corpus(str(tmp_path)) == 0
