@@ -23,7 +23,7 @@ RUN apk upgrade --no-cache brotli-libs curl libcurl libexpat \
  && rm -f /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*.html \
  && rm -rf /docker-entrypoint.d /docker-entrypoint.sh
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY index.html /usr/share/nginx/html/index.html
+COPY index.html styles.css app.js favicon.svg /usr/share/nginx/html/
 USER 101
 EXPOSE 8080
 ENTRYPOINT ["nginx", "-g", "daemon off;"]

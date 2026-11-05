@@ -113,6 +113,17 @@ curl -s --max-time 300 -D "$OUT/smoke-headers.txt" -H "Host: rahbar.local" -H "C
 echo
 grep -q '"answer"' "$OUT/smoke.json" || { echo "no answer through the Ingress"; exit 1; }
 
+# The chat UI through the same Ingress: the page, its script and stylesheet, and the
+# Content-Security-Policy header that nginx adds.
+curl -s -D "$OUT/ui-headers.txt" -H "Host: rahbar.local" http://127.0.0.1:18080/ -o "$OUT/ui-index.html"
+grep -q "<title>RAHBAR" "$OUT/ui-index.html" || { echo "the UI page is not served via the Ingress"; exit 1; }
+grep -qi "^content-security-policy:" "$OUT/ui-headers.txt" || { echo "the UI has no CSP header"; exit 1; }
+for f in app.js styles.css; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: rahbar.local" "http://127.0.0.1:18080/$f")
+  [ "$code" = 200 ] || { echo "UI file $f: HTTP $code"; exit 1; }
+done
+echo "UI served through the Ingress with its CSP header"
+
 if [ -f eval/fixtures/baseline.json ]; then
   python eval/run_eval.py --api http://127.0.0.1:18080 --host rahbar.local \
     --golden eval/fixtures/golden.fixture.yaml --baseline eval/fixtures/baseline.json \

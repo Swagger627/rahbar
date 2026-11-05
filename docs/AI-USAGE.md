@@ -86,6 +86,19 @@ this file is the disclosure instead.
   - did not ignore, hide or downgrade any finding.
   - The team member approved the upgrades, and told the AI to apply the Docker Desktop socket
     fix itself this time.
+- **Chat UI (Step 5.1):** the team member gave the AI full creative control over the
+  interface, with these limits: the API contract stays the same, nothing is faked, and the UI
+  must be accessible and safe.
+  - **What the AI designed and wrote:** the "Lantern Trail" design and its original
+    paper-lantern mascot, drawn as inline SVG with no outside artwork, plus `ui/index.html`,
+    `ui/styles.css`, `ui/app.js`, `ui/favicon.svg` and the nginx security headers.
+  - **How it tested it:** against the real API and the real models, in a browser. The
+    screenshots in `docs/evidence/ui/` come from those real runs.
+  - **What testing found and fixed:** the text box measured itself before the layout was
+    ready; new cards were hidden under the input bar; the source tickets' dotted divider
+    overlapped text on phones.
+  - **Its own slip:** one suggestion button led to a question the model declined. It was
+    reworded to a phrasing the system answers with sources.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is

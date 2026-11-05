@@ -81,6 +81,15 @@ kubectl --context minikube get pods -A
 - Wait until `calico-node`, `calico-kube-controllers`, `ingress-nginx-controller` and
   `metrics-server` are `Running`.
 
+**Check the default context after every start.** On 2026-11-06, restarting the existing
+cluster switched kubectl's current context to `minikube`, even with `--keep-context=true`.
+Put it back straight away, so that nothing ever runs against the wrong cluster by accident:
+
+```powershell
+kubectl config current-context            # must print kind-civicpulse
+kubectl config use-context kind-civicpulse
+```
+
 If Docker Desktop itself will not start, this laptop's Docker 4.91 has a known socket bug.
 The fix used here, only with the owner's approval each time, is to rename
 `%LOCALAPPDATA%\Docker\run` and `%LOCALAPPDATA%\docker-secrets-engine` while Docker is
