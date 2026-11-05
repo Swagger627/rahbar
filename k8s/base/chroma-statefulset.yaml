@@ -23,6 +23,9 @@ spec:
       labels:
         app: chroma
     spec:
+      # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+      # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+      enableServiceLinks: false
       serviceAccountName: chroma
       automountServiceAccountToken: false
       # The official image starts as root; it also runs fine as a plain user, so we

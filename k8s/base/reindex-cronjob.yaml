@@ -6,9 +6,10 @@
 # Chroma, on the same corpus PVC as the first indexer Job (indexer-job.yaml), and checks
 # every PDF's SHA-256 before indexing.
 #
-# SUSPENDED on purpose until the first real index has been proven on the live cluster.
-# Then turn the weekly schedule on (docs/DEPLOYMENT.md, "Scheduled re-index"):
-#   kubectl patch cronjob reindex -n rahbar -p '{"spec":{"suspend":false}}'
+# The weekly schedule is ON since 2026-11-05: the first real index (indexer-job.yaml) and
+# three manual runs from this template completed on minikube (431 chunks each,
+# docs/evidence/minikube-2026-11-05.txt). To pause it:
+#   kubectl patch cronjob reindex -n rahbar -p '{"spec":{"suspend":true}}'
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -22,7 +23,7 @@ metadata:
 spec:
   # Every Sunday at 03:00 (cluster time).
   schedule: "0 3 * * 0"
-  suspend: true
+  suspend: false
   # Never start a second re-index while one is still running: Chroma has one writer.
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
@@ -36,6 +37,9 @@ spec:
             app: indexer
         spec:
           restartPolicy: OnFailure
+          # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+          # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+          enableServiceLinks: false
           serviceAccountName: indexer
           automountServiceAccountToken: false
           securityContext:
@@ -51,15 +55,15 @@ spec:
               envFrom:
                 - configMapRef:
                     name: rahbar-config
-              # Embedding a corpus needs far more memory than serving a query; these
-              # starting values must be checked against `kubectl top pods` (section 4.5).
+              # A 1 GiB limit was OOMKilled (exit 137) on minikube during OCR of the scanned
+              # PDFs; the measured peak is in docs/DEPLOYMENT.md.
               resources:
                 requests:
                   cpu: 250m
                   memory: 512Mi
                 limits:
                   cpu: "1"
-                  memory: 1Gi
+                  memory: 2Gi
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true

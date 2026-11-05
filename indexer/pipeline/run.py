@@ -163,6 +163,8 @@ def main() -> int:
             count = write_dummy_index(settings, get_client(settings))
         elif args.verify_corpus:
             count = verify_corpus(settings.corpus_dir)
+            if count == 0:     # an empty or wrong folder must not look like a pass
+                raise RuntimeError(f"no _index.json in {settings.corpus_dir}: nothing verified")
         elif args.dry_run:
             count = dry_run(settings)
         else:

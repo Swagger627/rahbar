@@ -33,6 +33,9 @@ spec:
       labels:
         app: api
     spec:
+      # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+      # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+      enableServiceLinks: false
       serviceAccountName: api
       automountServiceAccountToken: false
       # Time for in-flight requests to finish after the pod is told to stop.

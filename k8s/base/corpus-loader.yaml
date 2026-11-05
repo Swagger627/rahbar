@@ -20,6 +20,9 @@ metadata:
 spec:
   restartPolicy: Never
   activeDeadlineSeconds: 3600        # it removes itself from service after an hour
+  # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+  # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+  enableServiceLinks: false
   serviceAccountName: indexer
   automountServiceAccountToken: false
   securityContext:

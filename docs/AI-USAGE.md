@@ -53,8 +53,20 @@ this file is the disclosure instead.
   settings, added the corpus PVC, the loader pod and the real indexer Job, opened only
   Ollama's port in the NetworkPolicies, removed the destructive dummy Job, and wrote
   `docs/DEPLOYMENT.md`. It tested container access to the host's Ollama before choosing the
-  network rule. It did not start a cluster, because minikube is not installed and free memory
-  was too low; that is reported, not claimed.
+  network rule.
+- **First live deployment (2026-11-05):** with the owner's approval, the AI installed
+  minikube without admin rights (the official binary, SHA-256 checked) and deployed to a
+  live cluster.
+  - **Three real bugs** came up and were fixed:
+    - Chroma crashed on the `CHROMA_PORT` variable that Kubernetes injects
+      (`enableServiceLinks: false`);
+    - the api start-up check blocked past the startup probe (it now runs in the background);
+    - the indexer was OOMKilled at 1 GiB (measured peak 1,117 MiB; the limit is now 2 GiB).
+  - **Its own mistakes were corrected:**
+    - an earlier claim that the indexer peaked under 1 GiB (Docker swap had hidden the real
+      peak);
+    - a network test that wrongly showed an allowed path as blocked;
+    - a memory reading that Git Bash's path rewriting turned into 0.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is

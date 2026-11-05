@@ -4,6 +4,8 @@ client records what the indexer would have written."""
 from __future__ import annotations
 
 import math
+
+import pytest
 from pathlib import Path
 
 from pipeline.config import get_settings
@@ -92,3 +94,14 @@ def test_no_index_file_means_nothing_to_verify(tmp_path: Path) -> None:
     from pipeline.run import verify_corpus
 
     assert verify_corpus(str(tmp_path)) == 0
+
+
+def test_verify_corpus_flag_fails_on_an_empty_folder(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    from pipeline import run
+
+    monkeypatch.setenv("CORPUS_DIR", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", ["run", "--verify-corpus"])
+    assert run.main() == 1
