@@ -146,3 +146,83 @@ kubectl --context minikube -n rahbar rollout status deploy/api --timeout=300s
 or deploy the previous good SHA with the `set image` commands above. Because images are tagged
 by commit, "the previous version" is always an exact, known commit, never a moving `:latest`.
 `kubectl --context minikube -n rahbar rollout history deploy/api` lists the revisions.
+
+## Security fixes (Step 4.3)
+
+The first CI runs ([42089834821](https://github.com/Swagger627/rahbar/actions/runs/42089834821),
+[42091124707](https://github.com/Swagger627/rahbar/actions/runs/42091124707)) failed the
+`scan` job. That was correct: Trivy found HIGH and CRITICAL vulnerabilities that already
+had fixes. Nothing was ignored or hidden. Every one was fixed by an upgrade.
+
+### What was vulnerable, and what changed
+
+| Image | Package | Before | CVEs (Trivy) | After | How |
+| --- | --- | --- | --- | --- | --- |
+| api | starlette | 0.46.2 | CVE-2025-62727, CVE-2026-48818, CVE-2026-54283 (HIGH; fixed by 1.3.1) | 1.10.0 | FastAPI 0.115.12 capped Starlette below 0.47, so FastAPI went to 0.162.0 (it allows Starlette 1.x). Starlette is now pinned explicitly |
+| api, indexer | Debian `apt` | 3.0.3 | CVE-2026-109518 (HIGH) | 3.0.4 | base image `python:3.12.15-slim-trixie` → `3.12.16-slim-trixie` (new pinned digest) |
+| indexer | pdfminer.six | 20250327 | CVE-2025-64512, CVE-2025-70559 (HIGH) | 20251230 | pdfplumber 0.11.6 → 0.11.9, the first version that pins the fixed pdfminer.six |
+| indexer | pypdf | 5.4.0 | 17 CVEs (HIGH; fixed by 6.14.1 to 6.21.4) | removed from the image | the pipeline never imports it. Only the tests use it, so it moved to `requirements-dev.txt` at 6.21.4 |
+| ui | brotli-libs | 1.2.0-r1 | CVE-2026-111497 (**CRITICAL**) | 1.2.1-r0 | same pinned `nginx-unprivileged:1.30.6-alpine3.24` base (already the newest 1.30 build), plus `apk upgrade` of just these packages |
+| ui | curl, libcurl | 8.22.0-r0 | CVE-2026-92392 (HIGH) | 8.23.0-r0 | as above |
+| ui | libexpat | 2.9.0-r0 | CVE-2026-113351, CVE-2026-117610, CVE-2026-118370 (HIGH) | 2.10.0-r0 | as above |
+
+### Compatibility checks
+
+- **Dependencies:** `pip check` passes in both new images and in the local virtualenv.
+- **Unit tests:** api 117 passed (coverage 96%), indexer 65, eval 53. ruff and mypy are
+  clean.
+- **API contract:** the OpenAPI schema of the old and the new api image was compared.
+  - The routes (`/api/ask`, `/healthz`, `/readyz`, `/metrics`) and our request and response
+    models are identical.
+  - The only difference is in FastAPI's own 422 error schema, which now also documents two
+    optional fields (`ctx`, `input`). Nothing a caller relies on changed.
+- **The images start correctly:** both new images were started with a read-only root
+  filesystem.
+  - **api** (uid 10001): `/healthz` 200, `/readyz` 200, `/metrics` serves the `rahbar_*`
+    metrics, `/api/ask` 200 (with `X-Cache`), and a bad body gets 422.
+  - **ui** (uid 101, port 8080): `/healthz` 200, `/` 200.
+- **Test-only warning:** Starlette 1.x prints one deprecation warning in the tests about its
+  test client and `httpx`. It does not affect the running service.
+
+### PDF extraction before and after
+
+The extraction libraries changed (pdfplumber and pdfminer.six). So the real extract, clean and
+chunk stages were run over the real corpus twice:
+- once with the **old** indexer image (pdfplumber 0.11.6, pdfminer.six 20250327);
+- once with the **new** one (0.11.9, 20251230).
+
+Neither run used Chroma or embeddings, and the production index was not touched. The commands
+are in `scripts/extraction_snapshot.py`; the comparison is `scripts/compare_snapshots.py`.
+
+| Check | Before | After |
+| --- | --- | --- |
+| SHA-256 of the corpus files | 7 verified | 7 verified |
+| Pages / OCR pages | 247 / 41 | 247 / 41, every page's text byte-identical |
+| Chunks | 431 | 431, identical ids, headings, text and metadata |
+| Versions and superseded flags | 2023-08 rules superseded, the rest current | identical |
+| Clause 5.8 (2023 rules) | page 17, "Repeating a Course" | identical |
+| Clause 1.21 (2026 rules) | page 10, "Attendance Requirements" | identical |
+| Campus table rows | 30 | 30, identical. Civil Engineering (BS, MS, PhD) still marked under LHR |
+
+**Total differences: 0.** The facts the index is built from did not change, so the real
+index on minikube does not need re-indexing.
+
+### Scan results after the fixes
+
+CI run [42097509816](https://github.com/Swagger627/rahbar/actions/runs/42097509816), with the
+same Trivy gate (HIGH,CRITICAL, fixable, OS and library packages, exit code 1):
+- `scan (api)`, `scan (indexer)` and `scan (ui)` all **passed**, with 0 findings.
+
+In that same run, `e2e-eval` failed for a reason unrelated to the upgrades. The ingress-nginx
+admission webhook refused the first `kubectl apply` for a few seconds after the controller
+reported ready. `scripts/e2e-kind.sh` now waits for the webhook's set-up Jobs, and retries the
+apply up to six times.
+
+### Remaining risk
+
+- New CVEs are published every week, so a green scan today can turn red later without any code
+  change. That is the point of the gate: when it happens, upgrade the same way, and rerun the
+  snapshot comparison if an extraction library changes.
+- The ui fix upgrades Alpine packages on top of a pinned base. When a newer
+  `nginx-unprivileged` 1.30 build ships with these versions, switch to its digest and drop the
+  `apk upgrade` line.

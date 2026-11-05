@@ -76,6 +76,16 @@ this file is the disclosure instead.
     request #2; their results are recorded in the pull request, not assumed.
   - **What it did not do:** it did not change the checker's exit code. It did not mark
     credential-blocked jobs as passed.
+- **Security fixes (Step 4.3):** the first CI runs' Trivy scans failed on real CVEs. The AI:
+  - read the scan logs and chose the smallest compatible upgrades from PyPI and Docker Hub
+    metadata;
+  - removed `pypdf` from the indexer image, after checking that only the tests use it;
+  - checked that the real PDF extraction did not change, by comparing a full snapshot from the
+    old and the new indexer image (`scripts/extraction_snapshot.py`,
+    `scripts/compare_snapshots.py`). The result is in `docs/CI-CD.md`.
+  - did not ignore, hide or downgrade any finding.
+  - The team member approved the upgrades, and told the AI to apply the Docker Desktop socket
+    fix itself this time.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is
