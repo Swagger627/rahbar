@@ -14,8 +14,13 @@ FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a
 # Our nginx.conf replaces the whole configuration and includes no conf.d, so the base
 # image's default site and its start-up scripts (which edit files under /etc/nginx and
 # would fail on a read-only filesystem) are removed.
+#
+# This is already the newest 1.30 build, but its Alpine packages brotli-libs (CRITICAL
+# CVE-2026-111497), curl/libcurl (CVE-2026-92392) and libexpat (CVE-2026-113351,
+# -117610, -118370) have fixed versions in Alpine 3.24, so only those are upgraded here.
 USER root
-RUN rm -f /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*.html \
+RUN apk upgrade --no-cache brotli-libs curl libcurl libexpat \
+ && rm -f /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*.html \
  && rm -rf /docker-entrypoint.d /docker-entrypoint.sh
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY index.html /usr/share/nginx/html/index.html

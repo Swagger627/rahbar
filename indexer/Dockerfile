@@ -13,7 +13,7 @@
 
 # Base pinned by tag and digest: Python 3.12 on Debian 13 (trixie), slim variant.
 # ---- build stage: install the pinned dependencies into a self-contained virtualenv
-FROM python:3.12.15-slim-trixie@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS build
+FROM python:3.12.16-slim-trixie@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54 AS build
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 COPY requirements.txt /tmp/requirements.txt
@@ -22,7 +22,7 @@ RUN python -m venv /opt/venv \
  && /opt/venv/bin/python -m compileall -q /opt/venv
 
 # ---- runtime stage: OCR system tools, the virtualenv and the pipeline code
-FROM python:3.12.15-slim-trixie@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS runtime
+FROM python:3.12.16-slim-trixie@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54 AS runtime
 # tesseract-ocr (with its English data) reads scanned pages; poppler-utils provides
 # pdftoppm for pdf2image and pdffonts for detecting pages with no text layer.
 RUN apt-get update \
