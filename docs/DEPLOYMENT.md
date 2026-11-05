@@ -101,6 +101,10 @@ docker build -t rahbar-ui:dev ui
 After loading a rebuilt image, restart the pods that use it, for example
 `kubectl --context minikube -n rahbar rollout restart deploy/api`.
 
+Once `cd.yml` has published images to Docker Hub, you can run a published commit instead of a
+local build. [CI-CD.md](CI-CD.md), "Deploy a version to minikube", explains how, and how to roll
+back.
+
 ## 4. Apply the manifests
 
 **PowerShell**

@@ -67,6 +67,15 @@ this file is the disclosure instead.
       peak);
     - a network test that wrongly showed an allowed path as blocked;
     - a memory reading that Git Bash's path rewriting turned into 0.
+- **CI/CD (Step 4.2):** the AI wrote `.github/workflows/ci.yml`, `.github/workflows/cd.yml`,
+  `scripts/e2e-kind.sh` and `docs/CI-CD.md`.
+  - **Pinning:** it looked up the current release and commit SHA of every action and tool it
+    pins.
+  - **How it was checked:** lint, tests, coverage, YAML parsing and the checker were run on the
+    laptop. The workflows themselves were judged only by their real GitHub Actions runs on pull
+    request #2; their results are recorded in the pull request, not assumed.
+  - **What it did not do:** it did not change the checker's exit code. It did not mark
+    credential-blocked jobs as passed.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is
