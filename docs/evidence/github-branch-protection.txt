@@ -1,0 +1,28 @@
+# GitHub branch protection: what is true today (2026-11-05T21:31:46Z). Read-only gh commands, run by the repository owner.
+
+$ gh repo view Swagger627/rahbar --json visibility,isPrivate,defaultBranchRef,viewerPermission
+{"defaultBranchRef":{"name":"main"},"isPrivate":true,"viewerPermission":"ADMIN","visibility":"PRIVATE"}
+
+$ gh api repos/Swagger627/rahbar/branches/main/protection
+{"message":"Upgrade to GitHub Pro or make this repository public to enable this feature.","documentation_url":"https://docs.github.com/rest/branches/branch-protection#get-branch-protection","status":"403"}gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)
+
+$ gh api repos/Swagger627/rahbar/branches/dev/protection
+{"message":"Upgrade to GitHub Pro or make this repository public to enable this feature.","documentation_url":"https://docs.github.com/rest/branches/branch-protection#get-branch-protection","status":"403"}gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)
+
+$ gh api repos/Swagger627/rahbar/rulesets
+{"message":"Upgrade to GitHub Pro or make this repository public to enable this feature.","documentation_url":"https://docs.github.com/rest/repos/rules#get-all-repository-rulesets","status":"403"}gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)
+
+## What this means
+
+- On 2026-11-03, while the repository was PUBLIC, main was protected: a pull request was required,
+  with 1 approving review, enforce_admins on, no force-push and no deletion, and conversation
+  resolution required. No status checks were required yet, because CI did not exist then. That
+  output was NOT saved at the time, so the only record is the project's working notes. It is
+  reported here, not proved.
+- The repository is now PRIVATE on a free GitHub plan. GitHub answers HTTP 403 for branch protection
+  and rulesets ("Upgrade to GitHub Pro or make this repository public"). Protection is NOT enforced
+  today: see github-merge-state.txt, where PR #1 into main shows mergeStateStatus CLEAN with no review.
+- This file does not fake a protected state. To restore the section 6 rules, the owner must either make
+  the repository public again or move to GitHub Pro (or an organisation plan). Then set main to require
+  a pull request, 1 approval, and the ci.yml checks. The visibility was deliberately NOT changed in
+  Step 5.2: that is the owner's decision.

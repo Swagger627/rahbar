@@ -1,0 +1,30 @@
+# Service endpoints, live minikube cluster, 2026-11-05T21:16:03Z. The api Service lists all three ready api pods; nothing in the Service was edited:
+# its selector app=api finds the pods by label (section 4.6).
+
+$ kubectl -n rahbar get endpoints
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME     ENDPOINTS                                                     AGE
+api      10.244.120.121:8000,10.244.120.122:8000,10.244.120.123:8000   7h29m
+chroma   10.244.120.112:8000                                           7h29m
+redis    10.244.120.111:6379                                           7h29m
+ui       10.244.120.106:8080                                           7h29m
+
+$ kubectl -n rahbar get endpointslices
+NAME           ADDRESSTYPE   PORTS   ENDPOINTS                                      AGE
+api-6dhs5      IPv4          8000    10.244.120.121,10.244.120.122,10.244.120.123   7h29m
+chroma-rcbqx   IPv4          8000    10.244.120.112                                 7h29m
+redis-c4gt7    IPv4          6379    10.244.120.111                                 7h29m
+ui-5zlwz       IPv4          8080    10.244.120.106                                 7h29m
+
+$ kubectl -n rahbar get pods -l app=api -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP               NODE       NOMINATED NODE   READINESS GATES
+api-84f7cd899d-hzcs7   1/1     Running   0          18m   10.244.120.121   minikube   <none>           <none>
+api-84f7cd899d-kjvqs   1/1     Running   0          18m   10.244.120.122   minikube   <none>           <none>
+api-84f7cd899d-sf266   1/1     Running   0          18m   10.244.120.123   minikube   <none>           <none>
+
+$ kubectl -n rahbar get svc
+NAME     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+api      ClusterIP   10.105.178.42    <none>        8000/TCP   7h29m
+chroma   ClusterIP   10.96.253.219    <none>        8000/TCP   7h29m
+redis    ClusterIP   10.110.149.178   <none>        6379/TCP   7h29m
+ui       ClusterIP   10.104.183.104   <none>        8080/TCP   7h29m

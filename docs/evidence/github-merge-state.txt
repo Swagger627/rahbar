@@ -1,0 +1,22 @@
+# Pull requests and reviews: what is true today (2026-11-05T21:31:46Z). Read-only gh commands.
+
+$ gh pr view 1 --repo Swagger627/rahbar --json number,title,state,isDraft,baseRefName,headRefName,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews
+{"baseRefName":"main","headRefName":"dev","isDraft":false,"latestReviews":[],"mergeStateStatus":"CLEAN","mergeable":"MERGEABLE","number":1,"reviewDecision":"","reviewRequests":[],"state":"OPEN","title":"chore: repository hardening and corpus declaration"}
+
+$ gh pr view 2 --repo Swagger627/rahbar --json number,title,state,isDraft,baseRefName,headRefName,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews
+{"baseRefName":"dev","headRefName":"rag/retrieval-improvement","isDraft":true,"latestReviews":[],"mergeStateStatus":"UNSTABLE","mergeable":"MERGEABLE","number":2,"reviewDecision":"","reviewRequests":[],"state":"OPEN","title":"WIP: RAG pipeline milestones (corpus to grounded answers) - not ready to merge"}
+
+$ gh api repos/Swagger627/rahbar/collaborators --jq '[.[]|{login,role_name}]'
+[{"login":"Swagger627","role_name":"admin"},{"login":"MugheesHiader476","role_name":"write"}]
+
+## What this means
+
+- PR #1 (dev -> main) has NO reviews and mergeStateStatus CLEAN: GitHub would let it merge. Merging is
+  NOT blocked today, because branch protection is not enforced on this private free-plan repository
+  (github-branch-protection.txt).
+- PR #2 (rag/retrieval-improvement -> dev) is a draft. It is UNSTABLE because the ci.yml "checker" job
+  fails (the honest remaining submission gaps), but no check is required, so that does not block it either.
+- No review was requested and none was given. MugheesHiader476 has write access but has not reviewed
+  anything yet, and nobody has reviewed on his behalf.
+- The section 6 demonstration (a PR that fails the eval gate, with a greyed-out merge button, then fixed
+  and green) needs enforced protection with required checks first. It has NOT been done.

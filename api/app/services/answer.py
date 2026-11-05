@@ -7,6 +7,7 @@ generate -> check citations (one retry) -> respond -> store a safe answer in the
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from ..config import Settings
@@ -14,7 +15,7 @@ from ..logjson import request_id_var
 from ..providers.llm.base import LLMProvider
 from ..retrieval.base import Retriever
 from ..retrieval.chroma import ChromaRetriever
-from ..routes.metrics import CACHE
+from ..routes.metrics import ANSWERS, CACHE, GENERATION, RETRIES, RETRIEVAL
 from ..schemas import Answer, AskResponse, Passage, RetrievedRef
 from . import cache
 from .grounding import (FALLBACK, NOT_COVERED, above_floor, check_answer, refusal,
@@ -62,16 +63,23 @@ def answer_with_cache(question: str, retriever: Retriever, provider: LLMProvider
 def answer_question(
     question: str, retriever: Retriever, provider: LLMProvider, settings: Settings
 ) -> AskResponse:
+    started = time.perf_counter()
     passages = retriever.retrieve(question, k=settings.top_k)
+    RETRIEVAL.observe(time.perf_counter() - started)
     evidence, dropped = without_instructions(
         above_floor(passages, settings.relevance_floor, question))
     if dropped:
         log.warning("passages with AI instructions dropped", extra={"chunk_ids": dropped})
     if evidence:
+        started = time.perf_counter()
         answer, outcome = generate_checked(question, evidence, provider)
+        GENERATION.observe(time.perf_counter() - started)
     else:
         # Nothing relevant enough: abstain without calling the model at all.
         answer, outcome = refusal(NOT_COVERED, "nothing cleared the relevance floor"), "abstained"
+    if outcome.endswith("after retry"):
+        RETRIES.inc()
+    ANSWERS.labels(outcome=outcome.split()[0]).inc()     # answered | abstained | fallback
 
     log.info(
         "answered",

@@ -10,6 +10,7 @@ import httpx
 from pydantic import ValidationError
 
 from ...config import Settings
+from ...routes.metrics import TOKENS
 from ...schemas import Answer, Passage
 
 log = logging.getLogger("rahbar.llm")
@@ -55,11 +56,7 @@ class OllamaProvider:
         passing the problem back here), and RuntimeError when Ollama cannot be reached."""
         messages = build_messages(question, passages)
         if problem:
-            allowed = "\n".join(citation_line(p) for p in passages)
-            messages.append({"role": "user", "content": (
-                f"Your previous reply was rejected: {problem}. Reply again with one JSON "
-                "object that matches the schema. Every citation must be one of these, "
-                f"copied exactly:\n{allowed}")})
+            messages.append(retry_message(problem, passages))
         url = self.settings.ollama_url.rstrip("/") + "/api/chat"
         try:
             response = httpx.post(url, json={
@@ -79,16 +76,12 @@ class OllamaProvider:
         except (ValueError, KeyError, TypeError) as exc:
             raise RuntimeError("LLM reply has no message content") from exc
         # Tokens in and out per call (section 4.8), and the time the model itself took.
+        count_tokens(data.get("prompt_eval_count"), data.get("eval_count"))
         log.info("llm reply", extra={"model": self.settings.llm_model,
                                      "prompt_tokens": data.get("prompt_eval_count"),
                                      "output_tokens": data.get("eval_count"),
                                      "model_seconds": round(data.get("total_duration", 0) / 1e9, 2)})
-        try:
-            return Answer.model_validate_json(content)    # format= shapes it; we still check
-        except ValidationError as exc:
-            first = exc.errors()[0]
-            where = ".".join(str(part) for part in first["loc"]) or "reply"
-            raise ValueError(f"the reply is not a valid Answer ({where}: {first['msg']})") from exc
+        return parse_answer(content)    # format= shapes the reply; we still check it
 
 
 def citation_line(passage: Passage) -> str:
@@ -97,6 +90,33 @@ def citation_line(passage: Passage) -> str:
     as the section); a ready-made object is easier to copy."""
     cite = {"source": passage.source, "section": passage.section, "page": passage.page}
     return html.escape(json.dumps(cite, ensure_ascii=False), quote=False)
+
+
+def count_tokens(tokens_in: object, tokens_out: object) -> None:
+    """Add one call's token counts to /metrics (rahbar_llm_tokens_total), when reported."""
+    if isinstance(tokens_in, int):
+        TOKENS.labels(direction="in").inc(tokens_in)
+    if isinstance(tokens_out, int):
+        TOKENS.labels(direction="out").inc(tokens_out)
+
+
+def retry_message(problem: str, passages: list[Passage]) -> dict[str, str]:
+    """The one retry: say what was wrong and list the only citations allowed."""
+    allowed = "\n".join(citation_line(p) for p in passages)
+    return {"role": "user", "content": (
+        f"Your previous reply was rejected: {problem}. Reply again with one JSON "
+        "object that matches the schema. Every citation must be one of these, "
+        f"copied exactly:\n{allowed}")}
+
+
+def parse_answer(content: str) -> Answer:
+    """Validate the model's JSON against the Answer contract; ValueError if it is not one."""
+    try:
+        return Answer.model_validate_json(content)
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        where = ".".join(str(part) for part in first["loc"]) or "reply"
+        raise ValueError(f"the reply is not a valid Answer ({where}: {first['msg']})") from exc
 
 
 def build_messages(question: str, passages: list[Passage]) -> list[dict[str, str]]:
