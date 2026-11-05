@@ -215,8 +215,11 @@ same Trivy gate (HIGH,CRITICAL, fixable, OS and library packages, exit code 1):
 
 In that same run, `e2e-eval` failed for a reason unrelated to the upgrades. The ingress-nginx
 admission webhook refused the first `kubectl apply` for a few seconds after the controller
-reported ready. `scripts/e2e-kind.sh` now waits for the webhook's set-up Jobs, and retries the
-apply up to six times.
+reported ready. `scripts/e2e-kind.sh` now retries the apply up to six times, 10 s apart.
+
+A first attempt to also wait for the webhook's set-up Jobs broke run
+[42098461675](https://github.com/Swagger627/rahbar/actions/runs/42098461675): those Jobs are
+already gone by then, so `kubectl wait` found nothing and failed. That wait was removed.
 
 ### Remaining risk
 

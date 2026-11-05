@@ -62,8 +62,6 @@ step "3. Ingress controller"
 $K apply -f "$INGRESS_NGINX"
 $K label node --all ingress-ready=true --overwrite
 $K -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=300s
-# The admission webhook (which checks every Ingress) needs its certificate Jobs done.
-$K -n ingress-nginx wait --for=condition=complete job --all --timeout=180s
 
 step "4. Apply the prod overlay (Ollama's address adjusted for this runner)"
 fix() {   # host-specific values and image names; everything else as committed
@@ -75,8 +73,9 @@ fix() {   # host-specific values and image names; everything else as committed
 }
 kubectl kustomize k8s/overlays/prod | fix > "$OUT/applied.yaml"
 grep -nE "image:|OLLAMA_URL|cidr:" "$OUT/applied.yaml"
-# Even after that, the webhook's Service can refuse connections for a few seconds (CI run
-# 42097509816 failed this way). Retry a few times; a real manifest error fails every time.
+# ingress-nginx's admission webhook (it checks every Ingress) can refuse connections for a
+# few seconds after the controller is ready (CI run 42097509816 failed this way). Retry a
+# few times; a real manifest error fails every time.
 for attempt in 1 2 3 4 5 6; do
   $K apply -f "$OUT/applied.yaml" && break
   [ "$attempt" = 6 ] && { echo "apply failed 6 times"; exit 1; }
