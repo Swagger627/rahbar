@@ -1,0 +1,194 @@
+# Continuous delivery (section 6): test -> build-push -> deploy.
+#
+# Runs on a push to dev or main, which in this project only happens by merging a pull
+# request that passed ci.yml. Branch protection on dev and main requires all 11 ci.yml
+# checks, but GitHub enforces it only while the repository is public, or on GitHub Pro
+# (docs/evidence/github-branch-protection.txt). The test job below re-checks the merged
+# commit either way, and Trivy runs again before anything is pushed.
+# It can also be started by hand ("Run workflow"). On any branch other than dev or main,
+# only the test job runs: build-push and deploy are skipped.
+#
+#   test        lint, unit tests with coverage and manifest validation again, on the
+#               exact merged commit
+#   build-push  needs test. Builds the api, indexer and ui images, scans them with Trivy,
+#               and only then pushes them to Docker Hub tagged with the commit SHA
+#               (${{ github.sha }}), never :latest, so every image traces to one commit
+#               and a rollback is "deploy the previous SHA"
+#   deploy      needs build-push. Deploys THOSE SHA images to an ephemeral kind cluster on
+#               the runner, waits on `kubectl rollout status`, checks readiness, and smoke
+#               tests through the Ingress with the fixture eval (scripts/e2e-kind.sh)
+#
+# GitHub's runners cannot reach the laptop, and the laptop's cluster is never exposed to
+# the internet, so this pipeline does NOT deploy to the local minikube. Rolling a
+# published SHA onto minikube is one manual command: docs/CI-CD.md, "Deploy a version".
+#
+# Secrets (Settings -> Secrets and variables -> Actions), never written in this file:
+#   DOCKERHUB_USERNAME  the Docker Hub account or organisation the images go to
+#   DOCKERHUB_TOKEN     a Docker Hub access token with Read & Write scope (not a password)
+name: cd
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel a half-finished publish; queue the next one instead.
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PYTHON_VERSION: "3.12"
+  KUBECONFORM_VERSION: v0.8.0
+  TRIVY_VERSION: v0.76.2
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RETRIEVER: stub
+      LLM_PROVIDER: stub
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            api/requirements*.txt
+            indexer/requirements*.txt
+      - name: Install pinned dependencies
+        run: pip install -r api/requirements-dev.txt -r indexer/requirements-dev.txt
+      - name: ruff and mypy
+        run: |
+          ruff check api indexer eval corpus
+          (cd api && mypy app)
+          (cd indexer && mypy pipeline)
+      - name: pytest (api coverage at least 60%)
+        run: |
+          (cd api && pytest -q --cov=app --cov-fail-under=60)
+          (cd indexer && pytest -q --cov=pipeline --cov-fail-under=60)
+          pytest -q eval/tests
+      - name: kustomize build | kubeconform -strict
+        run: |
+          base=https://github.com/yannh/kubeconform/releases/download/$KUBECONFORM_VERSION
+          curl -sSfLO "$base/kubeconform-linux-amd64.tar.gz"
+          curl -sSfLO "$base/CHECKSUMS"
+          grep " kubeconform-linux-amd64.tar.gz$" CHECKSUMS | sha256sum -c -
+          tar -xzf kubeconform-linux-amd64.tar.gz kubeconform
+          kubectl kustomize k8s/overlays/prod | ./kubeconform -strict -summary
+
+  build-push:
+    needs: test
+    # Publish only from the two integration branches. "Run workflow" on any other branch still
+    # runs the tests, but never pushes an image built from unmerged code.
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      # The three images build in parallel. If one fails, the others are cancelled, but an image
+      # that was already pushed stays (under this commit's SHA). The deploy job only runs when
+      # all three succeeded, so a half-published commit is never deployed.
+      fail-fast: true
+      matrix:
+        image: [api, indexer, ui]
+    steps:
+      - name: Check that the Docker Hub secrets exist
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::BLOCKED: add the repository secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (docs/CI-CD.md). Nothing was published."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build (load locally, not pushed yet)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.image }}
+          load: true
+          push: false
+          tags: rahbar-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+      - name: Trivy before publishing (fail on HIGH or CRITICAL with a fix available)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: rahbar-${{ matrix.image }}:${{ github.sha }}
+          version: ${{ env.TRIVY_VERSION }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Log in to Docker Hub (token from GitHub Secrets)
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push, tagged with the commit SHA
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.image }}
+          push: true
+          tags: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/rahbar-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install the eval runner's dependencies (pinned)
+        run: pip install httpx==0.28.1 pyyaml==6.0.2
+      - name: Log in to Docker Hub (in case the repositories are private)
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Cache the Ollama models
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.ollama/models
+          key: ollama-0.40.14-nomic-embed-text-llama3.2-3b
+      - name: Create an ephemeral kind cluster
+        uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          cluster_name: rahbar
+      # The same script as ci.yml's e2e-eval, but with the images just published:
+      # it waits on `kubectl rollout status`, checks /readyz, asks one question through
+      # the Ingress and runs the fixture eval gate.
+      - name: Deploy the SHA images, wait for rollout, smoke test through the Ingress
+        env:
+          REGISTRY: docker.io/${{ secrets.DOCKERHUB_USERNAME }}
+          TAG: ${{ github.sha }}
+          OUT: deploy-out
+        run: bash scripts/e2e-kind.sh
+      - name: Upload the deploy logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: deploy-${{ github.sha }}
+          path: deploy-out/
+          retention-days: 14

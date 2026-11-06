@@ -1,0 +1,85 @@
+# The weekly re-index (section 4.1) and the one-command manual re-index (section 4.2):
+#
+#   kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
+#
+# It runs the REAL pipeline (python -m pipeline.run, no --dummy), the only writer to
+# Chroma, on the same corpus PVC as the first indexer Job (indexer-job.yaml), and checks
+# every PDF's SHA-256 before indexing.
+#
+# The weekly schedule is ON since 2026-11-05: the first real index (indexer-job.yaml) and
+# three manual runs from this template completed on minikube (431 chunks each,
+# docs/evidence/minikube-2026-11-05.txt). To pause it:
+#   kubectl patch cronjob reindex -n rahbar -p '{"spec":{"suspend":true}}'
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: indexer
+automountServiceAccountToken: false
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reindex
+spec:
+  # Every Sunday at 03:00 (cluster time).
+  schedule: "0 3 * * 0"
+  suspend: false
+  # Never start a second re-index while one is still running: Chroma has one writer.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: indexer
+        spec:
+          restartPolicy: OnFailure
+          # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+          # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+          enableServiceLinks: false
+          serviceAccountName: indexer
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: indexer
+              image: rahbar-indexer:dev
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - configMapRef:
+                    name: rahbar-config
+              # A 1 GiB limit was OOMKilled (exit 137) on minikube during OCR of the scanned
+              # PDFs; the measured peak is in docs/DEPLOYMENT.md.
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                limits:
+                  cpu: "1"
+                  memory: 2Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: corpus
+                  mountPath: /corpus
+                  readOnly: true
+                - name: tmp          # pdf2image writes page images here for OCR
+                  mountPath: /tmp
+          volumes:
+            - name: corpus
+              persistentVolumeClaim:
+                claimName: corpus
+                readOnly: true
+            - name: tmp
+              emptyDir: {}

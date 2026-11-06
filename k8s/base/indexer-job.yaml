@@ -1,0 +1,76 @@
+# The FIRST real index (section 4.2): a one-shot Job running the real pipeline
+# (python -m pipeline.run). It checks the seven PDFs against their SHA-256, extracts
+# (with OCR), chunks, embeds through Ollama on the host, and swaps the new collection
+# into Chroma. It is the only writer to Chroma.
+#
+# NOT listed in kustomization.yaml on purpose: it must run AFTER the corpus has been
+# loaded (corpus-loader.yaml), and a finished Job cannot be re-applied with changes.
+#
+#   kubectl apply -f k8s/base/indexer-job.yaml
+#   kubectl logs -n rahbar job/indexer -f
+#
+# Later re-indexes use the CronJob's template instead (same image, same arguments):
+#   kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: indexer
+  namespace: rahbar
+  labels:
+    app: indexer
+spec:
+  # Retry a failed pod at most twice (for example while Chroma is still starting).
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: indexer
+    spec:
+      restartPolicy: OnFailure
+      # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+      # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+      enableServiceLinks: false
+      serviceAccountName: indexer
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: indexer
+          image: rahbar-indexer:dev
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          # A 1 GiB limit was OOMKilled (exit 137) on minikube during OCR of the scanned
+          # PDFs; the measured peak is in docs/DEPLOYMENT.md. Embedding happens in Ollama,
+          # outside the pod.
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: corpus
+              mountPath: /corpus
+              readOnly: true
+            - name: tmp          # pdf2image writes page images here for OCR
+              mountPath: /tmp
+      volumes:
+        - name: corpus
+          persistentVolumeClaim:
+            claimName: corpus
+            readOnly: true
+        - name: tmp
+          emptyDir: {}

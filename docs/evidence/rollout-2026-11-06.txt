@@ -1,0 +1,127 @@
+# RAHBAR rolling update of the api to the patched image (Step 5.2, 2026-11-05T20:54:33Z)
+# Commands are shown with '$'. Every kubectl command used --context minikube.
+
+$ kubectl -n rahbar get deploy api -o wide
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES           SELECTOR
+api    3/3     3            3           7h7m   api          rahbar-api:dev   app=api
+
+$ kubectl -n rahbar exec deploy/api -- python -c "...versions..."
+fastapi 0.115.12 starlette 0.46.2
+
+$ kubectl -n rahbar set image deploy/api api=rahbar-api:sec
+deployment.apps/api image updated
+
+$ kubectl -n rahbar rollout status deploy/api --timeout=300s
+Waiting for deployment "api" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+deployment "api" successfully rolled out
+
+# Availability probe through the Ingress during the rollout (POST /api/ask every ~0.3 s; 422 = the api answered):
+probe: 354 answered, 0 failed
+
+$ kubectl -n rahbar get pods -l app=api -o wide
+NAME                   READY   STATUS    RESTARTS   AGE     IP               NODE       NOMINATED NODE   READINESS GATES
+api-84f7cd899d-7ttx8   1/1     Running   0          2m23s   10.244.120.116   minikube   <none>           <none>
+api-84f7cd899d-8tlxk   1/1     Running   0          2m19s   10.244.120.117   minikube   <none>           <none>
+api-84f7cd899d-hhxjj   1/1     Running   0          2m28s   10.244.120.115   minikube   <none>           <none>
+
+$ kubectl -n rahbar exec deploy/api -- python -c "...versions..."
+fastapi 0.162.0 starlette 1.10.0
+
+$ kubectl -n rahbar rollout history deploy/api
+deployment.apps/api 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+4         <none>
+
+
+# --- Rollback demonstration (section 4.6): undo, show the previous version serving, then roll forward again
+$ kubectl -n rahbar rollout undo deploy/api
+Warning: resource deployments/api was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.
+deployment.apps/api rolled back
+$ kubectl -n rahbar rollout status deploy/api --timeout=300s
+deployment "api" successfully rolled out
+$ kubectl -n rahbar get deploy api -o wide
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES           SELECTOR
+api    3/3     3            3           7h10m   api          rahbar-api:dev   app=api
+$ kubectl -n rahbar exec deploy/api -- python -c "...versions..."
+fastapi 0.115.12 starlette 0.46.2
+
+$ kubectl -n rahbar set image deploy/api api=rahbar-api:sec
+deployment.apps/api image updated
+$ kubectl -n rahbar rollout status deploy/api --timeout=300s
+deployment "api" successfully rolled out
+$ kubectl -n rahbar get deploy api -o wide
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES           SELECTOR
+api    3/3     3            3           7h10m   api          rahbar-api:sec   app=api
+$ kubectl -n rahbar exec deploy/api -- python -c "...versions..."
+fastapi 0.162.0 starlette 1.10.0
+
+# Availability probe through the Ingress during undo and roll-forward:
+probe: 616 answered, 0 failed
+
+# --- Indexer: the CronJob now uses the patched image. No re-index was run (the index is unchanged; Step 4.3 showed the new image extracts byte-identical chunks).
+$ kubectl -n rahbar set image cronjob/reindex indexer=rahbar-indexer:sec
+cronjob.batch/reindex image updated
+$ kubectl -n rahbar get cronjob reindex -o jsonpath=...image...
+rahbar-indexer:sec  suspend=false  schedule=0 3 * * 0
+
+# --- Verification after the rollout
+$ kubectl -n rahbar exec deploy/api -- python -c "...GET http://localhost:8000/readyz..."
+{"status":"ready","checks":{"index":{"collection":"rahbar","rows":431,"embed_model":"nomic-embed-text","dimension":768},"redis":"ok"}}
+
+# a real question through the Ingress, twice (the second should come from the Redis cache)
+$ curl -s -D - -H "Host: rahbar.local" -d {"question":"What CGPA puts a student on academic warning?"} http://127.0.0.1:18081/api/ask
+HTTP/1.1 200 OK
+x-cache: hit
+time_total=2.097702s
+{"request_id":"10f60c59abcbb8028de57b8bb7e513dc","answer":"2.00","citations":[{"source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"11. Academic Warning/Probation","page":2},{"source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"13. Registration of Students under","page":2},{"source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"7. Grade Point Average","page":1}],"answered_from_context":true,"confidence":"high","retrieved":[{"chunk_id":"academic-rules-handbook-jun-2026-0032","source":"academic-rules-handbook-jun-2026.pdf","section":"Academic Warning/Probation","page":24,"score":0.85554099},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0015","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"11. Academic Warning/Probation","page":2,"score":0.81613314},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0016","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"13. Registration of Students under","page":2,"score":0.757231},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0008","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"7. Grade Point Average","page":1,"score":0.6793538299999999},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0032","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"32. Academic Dishonesty","page":5,"score":0.67665738}],"provider":"ollama"}$ curl -s -D - -H "Host: rahbar.local" -d {"question":"What CGPA puts a student on academic warning?"} http://127.0.0.1:18081/api/ask
+HTTP/1.1 200 OK
+x-cache: hit
+time_total=0.043418s
+{"request_id":"b5d85abdf1b9e6072805994e4cc7dc3d","answer":"2.00","citations":[{"source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"11. Academic Warning/Probation","page":2},{"source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"13. Registration of Students under","page":2},{"source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"7. Grade Point Average","page":1}],"answered_from_context":true,"confidence":"high","retrieved":[{"chunk_id":"academic-rules-handbook-jun-2026-0032","source":"academic-rules-handbook-jun-2026.pdf","section":"Academic Warning/Probation","page":24,"score":0.85554099},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0015","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"11. Academic Warning/Probation","page":2,"score":0.81613314},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0016","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"13. Registration of Students under","page":2,"score":0.757231},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0008","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"7. Grade Point Average","page":1,"score":0.6793538299999999},{"chunk_id":"prospectus-2026-academic-rules-and-regulations-0032","source":"prospectus-2026-academic-rules-and-regulations.pdf","section":"32. Academic Dishonesty","page":5,"score":0.67665738}],"provider":"ollama"}
+# NetworkPolicies still enforced (Calico). Blocked paths must time out; allowed paths must answer.
+$ kubectl -n rahbar exec deploy/ui -- wget -T 4 -qO- http://chroma:8000/api/v2/heartbeat   # ui -> chroma: must be BLOCKED
+wget: download timed out
+command terminated with exit code 1
+  -> blocked (timed out), as required
+$ kubectl -n rahbar exec deploy/ui -- wget -T 4 -qO- http://redis:6379   # ui -> redis
+  -> INCONCLUSIVE: wget fails on Redis either way (Redis does not speak HTTP); see the TCP check below
+$ kubectl -n rahbar exec deploy/api -- python -c "...GET http://chroma:8000/api/v2/heartbeat..."   # api -> chroma: allowed
+  -> 200 reached
+$ kubectl -n rahbar exec deploy/api -- python -c "...redis PING..."   # api -> redis: allowed
+  -> PING True
+$ kubectl -n rahbar exec deploy/api -- python -c "...GET $OLLAMA_URL/api/version..."   # api -> Ollama on the host: allowed
+  -> {"version":"0.40.14"}
+
+# ui -> redis re-checked with a plain TCP connect (what the policy actually controls):
+$ kubectl -n rahbar exec deploy/ui -- sh -c 'timeout 5 nc -z -w 4 redis 6379; echo exit=$?'   # must be BLOCKED
+exit=1
+  -> no TCP connection from ui: blocked, as required
+$ kubectl -n rahbar exec deploy/api -- python -c "...socket.create_connection(('redis',6379))..."   # allowed
+  -> api TCP connect to redis:6379 OK
+
+$ kubectl config current-context   # the default context was restored after minikube start
+kind-civicpulse
+
+# --- Second rolling update: rahbar-api:5.2 = the same patched dependencies plus the Step 5.2 code (hosted provider, section 4.8 metrics)
+$ kubectl -n rahbar set image deploy/api api=rahbar-api:5.2
+deployment.apps/api image updated
+$ kubectl -n rahbar rollout status deploy/api --timeout=300s
+deployment "api" successfully rolled out
+# availability probe during this rollout:
+probe: 282 answered, 0 failed
+$ kubectl -n rahbar get deploy api -o wide
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES           SELECTOR
+api    3/3     3            3           7h39m   api          rahbar-api:5.2   app=api
+$ kubectl -n rahbar exec deploy/api -- python -c "...GET /readyz..."
+{"status":"ready","checks":{"index":{"collection":"rahbar","rows":431,"embed_model":"nomic-embed-text","dimension":768},"redis":"ok"}}

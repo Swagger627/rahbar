@@ -1,0 +1,73 @@
+# Failure experiment C - Retrieval: EMBED_MODEL changed on the API only (section 5.5, stage C; section 4.4 guardrail)
+# Live minikube cluster, 2026-11-05T21:19:04Z. Every command used --context minikube.
+
+## 1. Healthy state
+$ kubectl -n rahbar get pods -l app=api
+NAME                   READY   STATUS    RESTARTS   AGE
+api-84f7cd899d-hzcs7   1/1     Running   0          21m
+api-84f7cd899d-kjvqs   1/1     Running   0          21m
+api-84f7cd899d-sf266   1/1     Running   0          21m
+$ kubectl -n rahbar get configmap rahbar-config -o jsonpath={.data.EMBED_MODEL}
+nomic-embed-text
+$ kubectl -n rahbar exec deploy/api -- python -c "...GET /readyz..."
+{"status":"ready","checks":{"index":{"collection":"rahbar","rows":431,"embed_model":"nomic-embed-text","dimension":768},"redis":"ok"}}
+
+## 2. Break it: a different embedding model, set on the api Deployment only (the indexer and the ConfigMap keep nomic-embed-text)
+$ kubectl -n rahbar set env deploy/api EMBED_MODEL=all-minilm
+deployment.apps/api env updated
+$ kubectl -n rahbar rollout status deploy/api --timeout=90s
+Waiting for deployment "api" rollout to finish: 1 out of 3 new replicas have been updated...
+error: timed out waiting for the condition
+(exit code 1)
+
+## 3. Symptom
+# Users: the availability probe through the Ingress during those ~100 s (POST /api/ask; 422 = the api answered):
+probe: 235 answered, 0 failed
+$ kubectl -n rahbar get pods -l app=api
+NAME                   READY   STATUS    RESTARTS   AGE
+api-69f9745f4-gzcvt    0/1     Running   0          100s
+api-84f7cd899d-hzcs7   1/1     Running   0          22m
+api-84f7cd899d-kjvqs   1/1     Running   0          22m
+api-84f7cd899d-sf266   1/1     Running   0          22m
+$ kubectl -n rahbar get deploy api
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+api    3/3     1            3           7h33m
+
+## 4. Diagnosis: status, then events, then logs
+$ kubectl -n rahbar describe pod api-69f9745f4-gzcvt | (Events)
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  100s               default-scheduler  Successfully assigned rahbar/api-69f9745f4-gzcvt to minikube
+  Normal   Pulled     99s                kubelet            spec.containers{api}: Container image "rahbar-api:sec" already present on machine and can be accessed by the pod
+  Normal   Created    99s                kubelet            spec.containers{api}: Container created
+  Normal   Started    98s                kubelet            spec.containers{api}: Container started
+  Warning  Unhealthy  97s                kubelet            spec.containers{api}: Startup probe failed: Get "http://10.244.120.124:8000/healthz": dial tcp 10.244.120.124:8000: connect: connection refused
+  Warning  Unhealthy  5s (x11 over 95s)  kubelet            spec.containers{api}: Readiness probe failed: HTTP probe failed with statuscode: 503
+$ kubectl -n rahbar exec api-69f9745f4-gzcvt -- python -c "...GET /readyz..."
+HTTP 503 {"status":"not ready","reason":"embedding model mismatch: the index was built with 'nomic-embed-text' but EMBED_MODEL is 'all-minilm'","checks":{}}
+$ kubectl -n rahbar logs api-69f9745f4-gzcvt | grep -i embed
+{"ts": "2026-11-05T21:19:09Z", "level": "INFO", "logger": "rahbar.api", "msg": "api started", "request_id": "-", "retriever": "chroma", "llm_provider": "ollama-host", "embed_model": "all-minilm", "top_k": 5}
+{"ts": "2026-11-05T21:19:10Z", "level": "ERROR", "logger": "rahbar.api", "msg": "index check failed; not ready", "request_id": "-", "reason": "embedding model mismatch: the index was built with 'nomic-embed-text' but EMBED_MODEL is 'all-minilm'", "embed_model": "all-minilm"}
+
+## 5. Remedy: roll the api back to the template without the override (the ConfigMap value, nomic-embed-text)
+$ kubectl -n rahbar rollout undo deploy/api
+deployment.apps/api rolled back
+$ kubectl -n rahbar rollout status deploy/api --timeout=180s
+deployment "api" successfully rolled out
+
+## 6. Verify recovery
+$ kubectl -n rahbar get pods -l app=api
+NAME                   READY   STATUS        RESTARTS   AGE
+api-69f9745f4-gzcvt    0/1     Terminating   0          117s
+api-84f7cd899d-hzcs7   1/1     Running       0          23m
+api-84f7cd899d-kjvqs   1/1     Running       0          23m
+api-84f7cd899d-sf266   1/1     Running       0          23m
+$ kubectl -n rahbar get deploy api -o jsonpath=...image and env...
+rahbar-api:sec  env EMBED_MODEL override: 
+$ kubectl -n rahbar exec deploy/api -- python -c "...GET /readyz..."
+{"status":"ready","checks":{"index":{"collection":"rahbar","rows":431,"embed_model":"nomic-embed-text","dimension":768},"redis":"ok"}}
+$ curl -s -H "Host: rahbar.local" -d {"question":"What is the tuition fee per credit hour for bachelor's programmes in 2026-27?"} http://127.0.0.1:18081/api/ask
+HTTP/1.1 200 OK
+x-cache: hit
+{"request_id":"d7c1b17c27a3cd7e33d7614e6a5ffcf1","answer":"Rs. 12,000","citations":[{"source":"prospectus-2026-fee-information.pdf","section":"3. Tuition Fee","page":1}],"answered_from_context":true,"confidence":"high","retrieved":[{"chunk_id":"prospectus-2026-fee-information-0003","source":"prospec

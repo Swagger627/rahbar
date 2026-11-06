@@ -1,0 +1,8 @@
+# Local minikube: the base as it is. (`kubectl apply -k k8s/overlays/dev`.)
+# Two one-time manifests in k8s/base are deliberately NOT part of any kustomization:
+# corpus-loader.yaml (copies the PDFs in) and indexer-job.yaml (the first real index).
+# They run by hand, in that order, after this overlay (docs/DEPLOYMENT.md).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base

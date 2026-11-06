@@ -1,0 +1,96 @@
+# Live minikube evidence, captured 2026-11-05T14:34:27Z (UTC) on the development laptop.
+# minikube v1.39.0, Kubernetes v1.37.0, containerd, Calico CNI, --memory=4096 --cpus=4.
+# Commands are shown before their output. Nothing below is edited by hand.
+
+$ kubectl --context minikube get nodes -o wide
+NAME       STATUS   ROLES           AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION                              CONTAINER-RUNTIME
+minikube   Ready    control-plane   53m   v1.37.0   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   6.18.33.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+$ kubectl --context minikube get pods -n kube-system
+NAME                                      READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-db57f7644-9gdth   1/1     Running   0          53m
+calico-node-qgsw6                         1/1     Running   0          53m
+coredns-559f6c778d-zq2gb                  1/1     Running   0          53m
+etcd-minikube                             1/1     Running   0          53m
+kube-apiserver-minikube                   1/1     Running   0          53m
+kube-controller-manager-minikube          1/1     Running   0          53m
+kube-proxy-rvnkv                          1/1     Running   0          53m
+kube-scheduler-minikube                   1/1     Running   0          53m
+metrics-server-768f9f6999-cp77g           1/1     Running   0          52m
+storage-provisioner                       1/1     Running   0          53m
+
+$ kubectl --context minikube get pods -n ingress-nginx
+NAME                                       READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-cl4x4       0/1     Completed   0          52m
+ingress-nginx-admission-patch-q45rm        0/1     Completed   0          52m
+ingress-nginx-controller-d7cd8c989-924f9   1/1     Running     0          52m
+
+$ kubectl --context minikube -n rahbar get pods -o wide
+NAME                     READY   STATUS      RESTARTS   AGE     IP              NODE       NOMINATED NODE   READINESS GATES
+api-58fbcb848d-5jgg7     1/1     Running     0          20m     10.244.120.85   minikube   <none>           <none>
+api-58fbcb848d-9hb5v     1/1     Running     0          20m     10.244.120.86   minikube   <none>           <none>
+api-58fbcb848d-ktcbd     1/1     Running     0          20m     10.244.120.87   minikube   <none>           <none>
+chroma-0                 1/1     Running     0          3m52s   10.244.120.91   minikube   <none>           <none>
+indexer-qvm6g            0/1     Completed   0          25m     10.244.120.82   minikube   <none>           <none>
+manual-reindex-3-5h4wx   0/1     Completed   0          3m32s   10.244.120.93   minikube   <none>           <none>
+redis-7f8448bb6b-75s4k   1/1     Running     0          3m51s   10.244.120.92   minikube   <none>           <none>
+ui-7886977-cn6xh         1/1     Running     0          47m     10.244.120.74   minikube   <none>           <none>
+
+$ kubectl --context minikube -n rahbar get pvc
+NAME            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+corpus          Bound    pvc-8e394d88-af8a-4410-8cd5-c2a6c2fd0320   1Gi        RWO            standard       <unset>                 47m
+data-chroma-0   Bound    pvc-9161fcb3-f541-4ce9-93f4-54755b3732c5   2Gi        RWO            standard       <unset>                 47m
+redis-data      Bound    pvc-5c683675-8465-466d-966e-907db9136ac4   1Gi        RWO            standard       <unset>                 47m
+
+$ kubectl --context minikube -n rahbar get jobs,cronjob
+NAME                         STATUS     COMPLETIONS   DURATION   AGE
+job.batch/indexer            Complete   1/1           3m9s       25m
+job.batch/manual-reindex-3   Complete   1/1           3m9s       3m32s
+
+NAME                    SCHEDULE    TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cronjob.batch/reindex   0 3 * * 0   <none>     True      0        <none>          47m
+
+$ kubectl --context minikube -n rahbar get svc,ingress,hpa
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/api      ClusterIP   10.105.178.42    <none>        8000/TCP   47m
+service/chroma   ClusterIP   10.96.253.219    <none>        8000/TCP   47m
+service/redis    ClusterIP   10.110.149.178   <none>        6379/TCP   47m
+service/ui       ClusterIP   10.104.183.104   <none>        8080/TCP   47m
+
+NAME                               CLASS   HOSTS          ADDRESS        PORTS   AGE
+ingress.networking.k8s.io/rahbar   nginx   rahbar.local   192.168.49.2   80      47m
+
+NAME                                      REFERENCE        TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/api   Deployment/api   cpu: 3%/70%   3         8         3          47m
+
+$ kubectl --context minikube -n rahbar get networkpolicy
+NAME               POD-SELECTOR   AGE
+allow-dns          <none>         47m
+api                app=api        47m
+chroma             app=chroma     47m
+default-deny-all   <none>         47m
+indexer            app=indexer    47m
+redis              app=redis      47m
+ui                 app=ui         47m
+
+$ kubectl --context minikube top node
+NAME       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+minikube   1236m        7%       2649Mi          35%         
+
+$ kubectl --context minikube -n rahbar top pods
+NAME                     CPU(cores)   MEMORY(bytes)   
+api-58fbcb848d-5jgg7     3m           79Mi            
+api-58fbcb848d-9hb5v     3m           71Mi            
+api-58fbcb848d-ktcbd     3m           73Mi            
+chroma-0                 2m           26Mi            
+redis-7f8448bb6b-75s4k   9m           10Mi            
+ui-7886977-cn6xh         1m           3Mi             
+
+$ kubectl --context minikube -n rahbar exec deploy/api -- python -c "...urlopen('http://localhost:8000/readyz')..."
+{"status":"ready","checks":{"index":{"collection":"rahbar","rows":431,"embed_model":"nomic-embed-text","dimension":768},"redis":"ok"}}
+
+$ kubectl --context minikube -n rahbar get cronjob reindex -o jsonpath='{...limits.memory}'
+2Gi
+
+# Indexer memory: cgroup memory.peak of manual-reindex-3, read every ~2 s with kubectl exec: 1117 MiB.
+# (kubectl top sampled at most 663-784 Mi; a 1Gi limit was OOMKilled, exit 137, twice.)

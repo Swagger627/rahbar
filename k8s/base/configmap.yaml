@@ -1,0 +1,44 @@
+# Non-secret settings shared by the api and the indexer (section 4.1).
+# Both programs read these environment variables (api/app/config.py and
+# indexer/pipeline/config.py), so one image runs everywhere. Secrets never go here:
+# the LLM key lives in a Kubernetes Secret created from the command line.
+#
+# These are the REAL settings: Chroma retrieval, llama3.2:3b through Ollama on the host
+# laptop (ollama-host), and the values measured in docs/PIPELINE.md.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rahbar-config
+data:
+  RETRIEVER: "chroma"
+  LLM_PROVIDER: "ollama-host"
+  # The embedding pin (section 4.4): the api and the indexer must read the same value.
+  # The api refuses to become ready against an index built with another model.
+  EMBED_MODEL: "nomic-embed-text"
+  LLM_MODEL: "llama3.2:3b"
+  # Ollama runs on the Windows host, bound to 127.0.0.1 only; minikube's docker driver
+  # reaches it through this name (docs/DEPLOYMENT.md, "Ollama").
+  OLLAMA_URL: "http://host.minikube.internal:11434"
+  CHROMA_HOST: "chroma"
+  CHROMA_PORT: "8000"
+  CHROMA_COLLECTION: "rahbar"
+  # Where the indexer reads the seven PDFs and _index.json (the corpus PVC).
+  CORPUS_DIR: "/corpus"
+  TOP_K: "5"
+  # Passages below this similarity are not shown to the model; measured on the golden
+  # set: every relevant top-5 passage scored >= 0.697, the hostel question 0.585.
+  RELEVANCE_FLOOR: "0.65"
+  # Low temperature because answers must be factual and valid JSON; 0.2 still lets
+  # the model phrase an answer naturally.
+  TEMPERATURE: "0.2"
+  # Chunking (section 3.1), in tokens = whitespace-separated words, not the embedding
+  # model's subword tokens. The shipped values come from our experiment.
+  CHUNK_SIZE: "400"
+  CHUNK_OVERLAP: "50"
+  # Semantic cache (section 3.3): all api replicas share this Redis. A hit needs
+  # similarity >= 0.90 and the same numbers/codes; 0.80 gave a false hit ("hostel fee"
+  # reusing a "tuition fee" answer). No password on this in-cluster Redis.
+  REDIS_URL: "redis://redis:6379/0"
+  CACHE_THRESHOLD: "0.90"
+  CACHE_TTL_SECONDS: "3600"
+  LOG_LEVEL: "INFO"

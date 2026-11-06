@@ -1,0 +1,8 @@
+# Build context for ui/: the image needs the page, its stylesheet, script and icon, and
+# nginx.conf only.
+*
+!index.html
+!styles.css
+!app.js
+!favicon.svg
+!nginx.conf
