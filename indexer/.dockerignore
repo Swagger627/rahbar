@@ -1,0 +1,31 @@
+# Build context for indexer/: the image needs requirements.txt and pipeline/ only.
+.git
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+tests
+requirements-dev.txt
+pyproject.toml
+# Corpus documents are mounted into the Job at /corpus; they never enter the image.
+corpus
+raw
+*.pdf
+*.html
+_index.json
+# Secrets never enter an image.
+.env
+.env.*
+*secret*
+*.pem
+*.key
+Dockerfile
+.dockerignore

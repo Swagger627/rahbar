@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -32,15 +34,39 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = settings
     app.state.retriever = get_retriever(settings)
     app.state.provider = get_provider(settings)
-    # STARTER-TODO(4.4): compare the collection's embedding-model metadata with
-    # settings.embed_model here, and make /readyz fail on a mismatch.
+    # The semantic cache's Redis client, shared by all requests; it connects on first use.
+    # All API replicas point at the same Redis, so they share one cache.
+    app.state.redis = None
+    if settings.redis_url:
+        import redis
+
+        app.state.redis = redis.Redis.from_url(settings.redis_url, socket_timeout=2,
+                                               socket_connect_timeout=2)
+    # The embedding pin (section 4.4): compare the collection's metadata with EMBED_MODEL
+    # now, and log exactly what conflicts. The pod keeps running but /readyz answers 503
+    # (it repeats the same check), so Kubernetes sends it no traffic until it is fixed.
+    # The check runs in the background: on the cluster, a Chroma that was not up yet made
+    # it hang past the startup probe, and Kubernetes restarted the pod again and again.
     # This process only reads the index. The indexer Job writes it.
+    from .retrieval.chroma import ChromaRetriever
+
+    if isinstance(app.state.retriever, ChromaRetriever):
+        threading.Thread(target=_log_index_check, args=(app.state.retriever, settings.embed_model),
+                         daemon=True).start()
     log.info(
         "api started",
         extra={"retriever": settings.retriever, "llm_provider": settings.llm_provider,
                "embed_model": settings.embed_model, "top_k": settings.top_k},
     )
     yield
+
+
+def _log_index_check(retriever: Any, embed_model: str) -> None:
+    try:
+        log.info("index check passed", extra=retriever.check_index())
+    except RuntimeError as exc:
+        log.error("index check failed; not ready", extra={"reason": str(exc),
+                                                         "embed_model": embed_model})
 
 
 app = FastAPI(title="RAHBAR API", lifespan=lifespan)

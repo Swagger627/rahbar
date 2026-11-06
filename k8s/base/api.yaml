@@ -1,0 +1,118 @@
+# The RAHBAR API (sections 4.1 to 4.7): three copies of the FastAPI service behind the
+# `api` Service. It only READS the index; indexing is the indexer Job's work (4.2).
+#
+# The ConfigMap sets the real pipeline: RETRIEVER=chroma, LLM_PROVIDER=ollama-host and a
+# shared Redis cache (REDIS_URL), so all three replicas share one cache.
+# /readyz (api/app/routes/health.py): with RETRIEVER=chroma it answers 503 unless Chroma
+# answers, the collection exists and is not empty, and its embed_model and dimension
+# match. It also checks Redis once REDIS_URL is set. With RETRIEVER=stub it is always ready.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 3
+  # Rolling update: start one new pod, wait until it is ready, then stop an old one,
+  # so there are never fewer than three pods serving (section 4.6).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      # No automatic CHROMA_PORT=tcp://... / REDIS_PORT=tcp://... variables from the Services:
+      # they clash with Chroma's own CHROMA_* settings and with our ConfigMap keys.
+      enableServiceLinks: false
+      serviceAccountName: api
+      automountServiceAccountToken: false
+      # Time for in-flight requests to finish after the pod is told to stop.
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: rahbar-api:dev
+          # Local images are loaded into minikube, not pulled from a registry.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          # The LLM key for LLM_PROVIDER=hosted, from the Secret created on the command
+          # line (see secret.placeholder.yaml). Optional, so the api starts without it.
+          env:
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rahbar-secret
+                  key: LLM_API_KEY
+                  optional: true
+          # The three probes from section 4.3. Liveness and startup use /healthz, which
+          # touches no dependency; readiness uses /readyz.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            # /readyz makes four quick calls to Chroma and pings Redis; the default 1 s
+            # timeout leaves no room on a busy laptop.
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Wait a few seconds before stopping, so the Service takes this pod out of
+          # rotation before it stops accepting connections (section 4.6).
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+          # Starting values for a small local cluster; to be checked against
+          # `kubectl top pods` output and adjusted (section 4.5).
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

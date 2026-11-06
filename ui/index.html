@@ -2,204 +2,117 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RAHBAR</title>
-<style>
-  :root {
-    --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6b66; --line: #e3e2dd;
-    --accent: #1f5f8b; --ok-bg: #e5f2e8; --ok-ink: #1e6a33; --warn-bg: #fbefd9; --warn-ink: #8a5300;
-    --err-bg: #fbe4e2; --err-ink: #9b2c22; --code: #f1f0ec;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161615; --panel: #1f1f1d; --ink: #ecebe6; --muted: #a3a29b; --line: #34332f;
-      --accent: #7cb4dc; --ok-bg: #1d3324; --ok-ink: #9ad4a9; --warn-bg: #3a2d14; --warn-ink: #f0c27a;
-      --err-bg: #3d1e1b; --err-ink: #f2a59c; --code: #2a2a27;
-    }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 160px; }
-  header h1 { margin: 0; font-size: 26px; letter-spacing: 0.02em; }
-  header p { margin: 4px 0 24px; color: var(--muted); }
-  #thread { display: flex; flex-direction: column; gap: 16px; }
-  .q { align-self: flex-end; max-width: 85%; background: var(--accent); color: #fff;
-       padding: 10px 14px; border-radius: 14px 14px 4px 14px; white-space: pre-wrap; }
-  .a { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .a .text { white-space: pre-wrap; margin: 0 0 12px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .chip { font-size: 12.5px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line);
-          color: var(--muted); }
-  .chip.ok { background: var(--ok-bg); color: var(--ok-ink); border-color: transparent; }
-  .chip.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: transparent; }
-  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
-       margin: 14px 0 6px; }
-  ol.cites { margin: 0; padding-left: 20px; }
-  details { margin-top: 10px; }
-  summary { cursor: pointer; color: var(--muted); font-size: 14px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
-  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  td.num { font-variant-numeric: tabular-nums; text-align: right; }
-  .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
-  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 0.92em; }
-  .err { background: var(--err-bg); color: var(--err-ink); border-radius: 12px; padding: 12px 16px; }
-  .pending { color: var(--muted); font-style: italic; }
-  form { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg);
-         border-top: 1px solid var(--line); padding: 12px 16px 16px; }
-  .bar { max-width: 760px; margin: 0 auto; display: flex; gap: 8px; }
-  textarea { flex: 1; resize: none; height: 52px; padding: 12px; font: inherit; color: var(--ink);
-             background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
-  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  button { padding: 0 20px; font: inherit; font-weight: 600; color: #fff; background: var(--accent);
-           border: 0; border-radius: 10px; cursor: pointer; }
-  button:disabled { opacity: 0.5; cursor: progress; }
-  .hint { max-width: 760px; margin: 6px auto 0; font-size: 12px; color: var(--muted); }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Only files from this same site may load or run, and the page may only talk to its own
+     /api. nginx sends the same policy as a header (ui/nginx.conf). -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="RAHBAR answers questions from the university's own documents, with sources.">
+<title>RAHBAR · your lantern through the rulebooks</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
 </head>
 <body>
-<main>
-  <header>
-    <h1>RAHBAR</h1>
-    <p>Answers only from the indexed documents, with sources. If the documents do not cover it, it says so.</p>
-  </header>
-  <section id="thread" aria-live="polite"></section>
+
+<!-- Decorative doodles of the "trail map". Hidden from screen readers. -->
+<div class="doodles" aria-hidden="true">
+  <svg class="doodle d-books" viewBox="0 0 90 70"><path d="M8 62h74M14 62V30h16v32M30 62V18h14v44M44 62V36l14-4 8 30"/><path d="M18 36h8M34 26h6M48 42l8-2"/></svg>
+  <svg class="doodle d-star" viewBox="0 0 40 40"><path d="M20 4l4 11 12 1-9 8 3 12-10-7-10 7 3-12-9-8 12-1z"/></svg>
+  <svg class="doodle d-hill" viewBox="0 0 120 60"><path d="M4 56c18-30 30-44 44-44s22 16 30 26 18 18 38 18"/><path d="M40 20l8-8 8 8"/></svg>
+  <svg class="doodle d-compass" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24"/><path d="M30 12l6 18-6 18-6-18z"/><path d="M30 6v4M30 50v4M6 30h4M50 30h4"/></svg>
+  <svg class="doodle d-trail" viewBox="0 0 200 900" preserveAspectRatio="none"><path d="M120 0c-80 80 60 160-20 260s70 170 10 280-60 200 20 360"/></svg>
+</div>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">
+      <div class="brand-mascot" id="brand-mascot"></div>
+      <div>
+        <h1 class="wordmark">RAHBAR</h1>
+        <p class="tagline">your lantern through the university rulebooks</p>
+      </div>
+    </div>
+    <ul class="promises" aria-label="How RAHBAR answers">
+      <li><span class="promise-dot" aria-hidden="true">1</span>Answers only from the indexed documents</li>
+      <li><span class="promise-dot" aria-hidden="true">2</span>Every answer shows its sources</li>
+      <li><span class="promise-dot" aria-hidden="true">3</span>Says so when the documents don't cover it</li>
+    </ul>
+  </div>
+</header>
+
+<main class="trail">
+  <section class="welcome" id="welcome" aria-labelledby="welcome-title">
+    <div class="welcome-card">
+      <h2 id="welcome-title">Where shall we go today?</h2>
+      <p>Ask about attendance, grades, fees, campuses or any rule in the documents. Each answer
+        comes with the pages it was taken from. When the documents don't cover a question,
+        the answer says so instead of guessing.</p>
+      <p class="try-label" id="try-label">Try one of these:</p>
+      <div class="suggestions" role="group" aria-labelledby="try-label">
+        <button type="button" class="suggestion">What CGPA puts a student on academic warning?</button>
+        <button type="button" class="suggestion">What is the minimum attendance requirement?</button>
+        <button type="button" class="suggestion">Which campuses offer Civil Engineering?</button>
+        <button type="button" class="suggestion">How many times can a course be repeated?</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- The conversation. role=log reads each new card to screen readers, politely. -->
+  <section id="thread" class="thread" role="log" aria-live="polite" aria-label="Questions and answers"></section>
 </main>
 
-<form id="ask">
-  <div class="bar">
-    <textarea id="question" aria-label="Your question" placeholder="Ask about the documents, e.g. What CGPA puts a student on academic warning?" maxlength="500" required></textarea>
-    <button id="send" type="submit">Ask</button>
+<form id="ask" class="dock" autocomplete="off">
+  <div class="dock-inner">
+    <label for="question" class="sr-only">Your question</label>
+    <textarea id="question" rows="1" maxlength="500" required
+              placeholder="Ask about the documents…"
+              aria-describedby="dock-hint counter"></textarea>
+    <button id="send" class="send" type="submit" aria-label="Ask">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h13M12 5l7 7-7 7"/></svg>
+      <span class="send-label">Ask</span>
+    </button>
   </div>
-  <div class="hint">Enter to send, Shift+Enter for a new line. 3 to 500 characters.</div>
+  <div class="dock-meta">
+    <span id="dock-hint">Enter to send · Shift+Enter for a new line</span>
+    <span id="counter" class="counter" aria-live="off">0 / 500</span>
+  </div>
 </form>
 
-<script>
-// The API sits behind the same Ingress host at /api. For local development you can
-// point elsewhere with ?api=http://localhost:8000 (that server must allow CORS).
-const API_BASE = new URLSearchParams(location.search).get("api") || window.RAHBAR_API || "";
+<!-- The mascot, Rahbar: an original paper-lantern guide. app.js clones it wherever it is
+     needed and sets its mood class (idle, thinking, happy, unsure, error). -->
+<template id="mascot-template">
+  <svg class="mascot" viewBox="0 0 120 140" aria-hidden="true" focusable="false">
+    <g class="m-body">
+      <path class="m-handle" d="M44 26 Q60 2 76 26"/>
+      <rect class="m-cap" x="37" y="22" width="46" height="13" rx="5"/>
+      <rect class="m-shell" x="20" y="32" width="80" height="78" rx="36"/>
+      <circle class="m-glow" cx="60" cy="74" r="27"/>
+      <path class="m-rib" d="M41 36 Q29 71 41 106"/>
+      <path class="m-rib" d="M79 36 Q91 71 79 106"/>
+      <g class="m-face">
+        <ellipse class="m-eye" cx="47" cy="66" rx="5" ry="6.5"/>
+        <ellipse class="m-eye" cx="73" cy="66" rx="5" ry="6.5"/>
+        <circle class="m-cheek" cx="38" cy="79" r="5"/>
+        <circle class="m-cheek" cx="82" cy="79" r="5"/>
+        <path class="m-mouth m-smile" d="M51 81 Q60 91 69 81"/>
+        <path class="m-mouth m-flat" d="M52 85 Q60 82 68 85"/>
+        <ellipse class="m-mouth m-oh" cx="60" cy="85" rx="4.5" ry="5"/>
+      </g>
+      <rect class="m-cap" x="39" y="106" width="42" height="11" rx="4"/>
+    </g>
+    <g class="m-feet">
+      <path class="m-leg" d="M50 117 v10"/>
+      <path class="m-leg" d="M70 117 v10"/>
+      <ellipse class="m-foot" cx="47" cy="129" rx="8" ry="4.5"/>
+      <ellipse class="m-foot" cx="73" cy="129" rx="8" ry="4.5"/>
+    </g>
+  </svg>
+</template>
 
-const thread = document.getElementById("thread");
-const form = document.getElementById("ask");
-const input = document.getElementById("question");
-const send = document.getElementById("send");
-
-// Model output and retrieved text are untrusted. Everything below is built with
-// textContent and createElement, never innerHTML, so a document or an answer
-// containing HTML or script is shown as text and never run.
-function el(tag, attrs = {}, text) {
-  const node = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-  if (text !== undefined) node.textContent = text;
-  return node;
-}
-
-function chip(text, kind) {
-  return el("span", { class: kind ? `chip ${kind}` : "chip" }, text);
-}
-
-function cite(c) {
-  return c.page != null ? `${c.source} / ${c.section}, p. ${c.page}` : `${c.source} / ${c.section}`;
-}
-
-function renderAnswer(data, cacheHeader) {
-  const card = el("article", { class: "a" });
-
-  const chips = el("div", { class: "chips" });
-  chips.append(data.answered_from_context
-    ? chip("From the documents", "ok")
-    : chip("Not covered by the documents", "warn"));
-  if (data.confidence) chips.append(chip(`confidence: ${data.confidence}`));
-  if (data.provider) chips.append(chip(`provider: ${data.provider}`));
-  const cached = typeof data.cached === "boolean" ? data.cached
-               : cacheHeader ? cacheHeader.toUpperCase() === "HIT" : null;
-  if (cached !== null) chips.append(chip(cached ? "cache: hit" : "cache: miss"));
-  card.append(chips);
-
-  card.append(el("p", { class: "text" }, data.answer ?? ""));
-
-  if (Array.isArray(data.citations) && data.citations.length) {
-    card.append(el("h3", {}, "Sources"));
-    const list = el("ol", { class: "cites" });
-    for (const c of data.citations) list.append(el("li", {}, cite(c)));
-    card.append(list);
-  }
-
-  if (Array.isArray(data.retrieved) && data.retrieved.length) {
-    const details = el("details");
-    details.append(el("summary", {}, `Retrieved passages (${data.retrieved.length})`));
-    const table = el("table");
-    const head = el("tr");
-    for (const h of ["Source", "Section", "Page", "Score"]) head.append(el("th", {}, h));
-    table.append(head);
-    for (const r of data.retrieved) {
-      const row = el("tr");
-      row.append(el("td", {}, r.source), el("td", {}, r.section), el("td", { class: "num" }, r.page ?? "–"),
-                 el("td", { class: "num" }, typeof r.score === "number" ? r.score.toFixed(3) : "–"));
-      table.append(row);
-    }
-    details.append(table);
-    card.append(details);
-  }
-
-  if (data.request_id) {
-    const meta = el("div", { class: "meta" }, "request id ");
-    meta.append(el("code", {}, data.request_id));
-    card.append(meta);
-  }
-  return card;
-}
-
-function errorMessage(status, body) {
-  const detail = body && typeof body.detail === "string" ? body.detail : "";
-  if (status === 422) return "Questions must be 3 to 500 characters.";
-  if (status === 429) return "Too many questions in a short time. Wait a moment and try again.";
-  if (status === 503) return `The service is not ready yet${detail ? `: ${detail}` : "."}`;
-  if (status >= 500) return `The service failed (HTTP ${status})${detail ? `: ${detail}` : "."}`;
-  return `Request failed (HTTP ${status})${detail ? `: ${detail}` : "."}`;
-}
-
-async function ask(question) {
-  thread.append(el("div", { class: "q" }, question));
-  const pending = el("div", { class: "pending" }, "Retrieving passages and writing an answer…");
-  thread.append(pending);
-  pending.scrollIntoView({ behavior: "smooth", block: "end" });
-  send.disabled = true;
-  try {
-    const res = await fetch(`${API_BASE}/api/ask`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
-    let body = null;
-    try { body = await res.json(); } catch { /* non-JSON error page */ }
-    pending.remove();
-    if (!res.ok) {
-      thread.append(el("div", { class: "err" }, errorMessage(res.status, body)));
-    } else {
-      thread.append(renderAnswer(body, res.headers.get("X-Cache")));
-    }
-  } catch (err) {
-    pending.remove();
-    thread.append(el("div", { class: "err" }, `Could not reach the API at ${API_BASE || location.origin}/api/ask.`));
-  } finally {
-    send.disabled = false;
-    input.focus();
-    thread.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }
-}
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const q = input.value.trim();
-  if (q.length < 3) return;
-  input.value = "";
-  ask(q);
-});
-
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-});
-</script>
+<noscript>
+  <p class="noscript">RAHBAR needs JavaScript to send questions to the API.</p>
+</noscript>
 </body>
 </html>

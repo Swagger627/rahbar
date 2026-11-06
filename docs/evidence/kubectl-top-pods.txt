@@ -1,0 +1,30 @@
+# kubectl top, live minikube cluster, 2026-11-05T21:18:37Z (Step 5.2). Every command used --context minikube.
+# Usage while idle, after the patched rollout. The usage during a real evaluation is in eval-2026-11-06/kubectl-top-during-cold-run1.txt;
+# the indexer's measured peak (1,117 MiB, cgroup memory.peak) is in minikube-2026-11-05.txt.
+# (An earlier capture showed one api pod at 246Mi: three leftover one-off 'python -c' processes of my own, started with kubectl exec
+#  to read chunk texts. They were stopped (no pod restart) and this capture was taken afterwards.)
+
+$ kubectl -n rahbar top pods
+NAME                     CPU(cores)   MEMORY(bytes)   
+api-84f7cd899d-hzcs7     3m           92Mi            
+api-84f7cd899d-kjvqs     3m           74Mi            
+api-84f7cd899d-sf266     3m           75Mi            
+chroma-0                 2m           69Mi            
+redis-7f8448bb6b-75s4k   8m           9Mi             
+ui-79fb995c5-wbhjp       1m           4Mi             
+
+$ kubectl top node
+NAME       CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+minikube   273m         1%       2327Mi          30%         
+
+# requests and limits these numbers are compared against
+$ kubectl -n rahbar get pods -o custom-columns=POD:...,CPU_REQ:...,CPU_LIM:...,MEM_REQ:...,MEM_LIM:...
+POD                      CPU_REQ   CPU_LIM   MEM_REQ   MEM_LIM
+api-84f7cd899d-hzcs7     100m      500m      128Mi     384Mi
+api-84f7cd899d-kjvqs     100m      500m      128Mi     384Mi
+api-84f7cd899d-sf266     100m      500m      128Mi     384Mi
+chroma-0                 100m      500m      128Mi     512Mi
+redis-7f8448bb6b-75s4k   50m       200m      32Mi      128Mi
+ui-79fb995c5-wbhjp       20m       100m      16Mi      64Mi
+$ kubectl -n rahbar get cronjob reindex -o jsonpath=...resources...
+{"limits":{"cpu":"1","memory":"2Gi"},"requests":{"cpu":"250m","memory":"512Mi"}}

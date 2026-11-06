@@ -1,0 +1,23 @@
+# The list of RAHBAR manifests. `kubectl apply -k k8s/overlays/dev` applies them all,
+# and every object is placed in the rahbar namespace.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rahbar
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - chroma-statefulset.yaml
+  - redis.yaml
+  - corpus-pvc.yaml
+  - api.yaml
+  - ui.yaml
+  - reindex-cronjob.yaml
+  - services.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - networkpolicy.yaml
+# Deliberately NOT listed:
+# - secret.placeholder.yaml: applying it would replace the real Secret with REPLACE_ME.
+#   Create the real one with `kubectl create secret`.
+# - corpus-loader.yaml and indexer-job.yaml: one-time steps, run by hand in that order
+#   after the corpus is ready (docs/DEPLOYMENT.md).

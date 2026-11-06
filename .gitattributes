@@ -1,0 +1,44 @@
+# Line endings. We develop on Windows, but every image runs Linux and CI runs on
+# Linux runners, so text files are stored and checked out with LF everywhere.
+# Git otherwise converts to CRLF on Windows checkouts, which breaks shell
+# scripts and entrypoints inside containers.
+* text=auto eol=lf
+
+# Code, configuration and documentation
+*.py        text eol=lf
+*.sh        text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.json      text eol=lf
+*.toml      text eol=lf
+*.cfg       text eol=lf
+*.ini       text eol=lf
+*.conf      text eol=lf
+*.txt       text eol=lf
+*.md        text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.js        text eol=lf
+Dockerfile  text eol=lf
+*.dockerfile text eol=lf
+.dockerignore text eol=lf
+Makefile    text eol=lf
+.gitignore  text eol=lf
+.gitattributes text eol=lf
+
+# Windows-only scripts keep Windows line endings
+*.ps1       text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# Binary files: never convert, never diff as text
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.docx      binary
+*.xlsx      binary

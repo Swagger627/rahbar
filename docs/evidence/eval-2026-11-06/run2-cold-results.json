@@ -1,0 +1,300 @@
+{
+  "recall@3": 1.0,
+  "recall@5": 1.0,
+  "recall@3_by_type": {
+    "abstain": null,
+    "exact": 1.0,
+    "injection": 1.0,
+    "ordinary": 1.0,
+    "version": 1.0
+  },
+  "recall@5_by_type": {
+    "abstain": null,
+    "exact": 1.0,
+    "injection": 1.0,
+    "ordinary": 1.0,
+    "version": 1.0
+  },
+  "answerable_by_type": {
+    "abstain": 0,
+    "exact": 3,
+    "injection": 1,
+    "ordinary": 8,
+    "version": 2
+  },
+  "citation_validity": 1.0,
+  "citation_validity_cited_only": 1.0,
+  "abstention_correctness": 1.0,
+  "counts": {
+    "rows": 16,
+    "answerable": 14,
+    "must_abstain": 2,
+    "abstained_correctly": 2,
+    "unscored": 0,
+    "citations": 13,
+    "citations_valid": 13,
+    "answers_without_citations": 0,
+    "answerable_declined": 2,
+    "malformed": 0
+  },
+  "malformed": [],
+  "per_question": [
+    {
+      "id": "o01",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0032",
+        "prospectus-2026-academic-rules-and-regulations-0015",
+        "prospectus-2026-academic-rules-and-regulations-0019",
+        "prospectus-2026-academic-rules-and-regulations-0008",
+        "academic-rules-handbook-jun-2026-0016"
+      ]
+    },
+    {
+      "id": "o02",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0018",
+        "prospectus-2026-academic-rules-and-regulations-0006",
+        "prospectus-2026-academic-rules-and-regulations-0008",
+        "academic-rules-handbook-jun-2026-0003",
+        "academic-rules-handbook-jun-2026-0016"
+      ]
+    },
+    {
+      "id": "o03",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "prospectus-2026-academic-rules-and-regulations-0033",
+        "academic-rules-handbook-jun-2026-0015",
+        "academic-rules-handbook-jun-2026-0002",
+        "prospectus-2026-academic-rules-and-regulations-0010",
+        "prospectus-2026-fee-information-0003"
+      ]
+    },
+    {
+      "id": "o04",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0029",
+        "prospectus-2026-fee-information-0007",
+        "prospectus-2026-fee-information-0006",
+        "prospectus-2026-fee-information-0005",
+        "prospectus-2026-academic-rules-and-regulations-0014"
+      ]
+    },
+    {
+      "id": "o05",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "annual-report-2023-24-0016",
+        "student-handbook-jun-2026-0059",
+        "annual-report-2023-24-0159",
+        "annual-report-2023-24-0094",
+        "annual-report-2023-24-0028"
+      ]
+    },
+    {
+      "id": "o06",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "faculty-entrepreneurship-and-technical-start-ups-policy-0004",
+        "faculty-entrepreneurship-and-technical-start-ups-policy-0002",
+        "faculty-entrepreneurship-and-technical-start-ups-policy-0001",
+        "faculty-entrepreneurship-and-technical-start-ups-policy-0006",
+        "faculty-entrepreneurship-and-technical-start-ups-policy-0005"
+      ]
+    },
+    {
+      "id": "o07",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "answered_from_context": false,
+      "retrieved_ids": [
+        "student-handbook-jun-2026-0078",
+        "academic-rules-handbook-jun-2026-0058",
+        "student-handbook-jun-2026-0074",
+        "academic-rules-handbook-jun-2026-0068",
+        "student-handbook-jun-2026-0084"
+      ]
+    },
+    {
+      "id": "o08",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0008",
+        "student-handbook-jun-2026-0014",
+        "student-handbook-jun-2026-0003",
+        "academic-rules-handbook-jun-2026-0042",
+        "student-handbook-jun-2026-0002"
+      ]
+    },
+    {
+      "id": "v01",
+      "type": "version",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0033",
+        "prospectus-2026-academic-rules-and-regulations-0019",
+        "academic-rules-handbook-jun-2026-0023",
+        "prospectus-2026-academic-rules-and-regulations-0012",
+        "prospectus-2026-academic-rules-and-regulations-0020"
+      ]
+    },
+    {
+      "id": "v02",
+      "type": "version",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "prospectus-2026-academic-rules-and-regulations-0019",
+        "undergraduate-academic-rules-aug-2023-0028",
+        "academic-rules-handbook-jun-2026-0033",
+        "prospectus-2026-academic-rules-and-regulations-0029",
+        "undergraduate-academic-rules-aug-2023-0003"
+      ]
+    },
+    {
+      "id": "e01",
+      "type": "exact",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0014",
+        "academic-rules-handbook-jun-2026-0001",
+        "student-handbook-jun-2026-0002",
+        "prospectus-2026-academic-rules-and-regulations-0035",
+        "student-handbook-jun-2026-0003"
+      ]
+    },
+    {
+      "id": "e02",
+      "type": "exact",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "academic-rules-handbook-jun-2026-0032",
+        "prospectus-2026-academic-rules-and-regulations-0015",
+        "prospectus-2026-academic-rules-and-regulations-0016",
+        "academic-rules-handbook-jun-2026-0015",
+        "prospectus-2026-academic-rules-and-regulations-0032"
+      ]
+    },
+    {
+      "id": "e03",
+      "type": "exact",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "retrieved_ids": [
+        "prospectus-2026-fee-information-0003",
+        "academic-rules-handbook-jun-2026-0015",
+        "prospectus-2026-academic-rules-and-regulations-0004",
+        "academic-rules-handbook-jun-2026-0002",
+        "prospectus-2026-fee-information-0001"
+      ]
+    },
+    {
+      "id": "a01",
+      "type": "abstain",
+      "must_abstain": true,
+      "abstained_correctly": true,
+      "answered_from_context": false,
+      "retrieved_ids": [
+        "student-handbook-jun-2026-0061",
+        "prospectus-2026-fee-information-0003",
+        "prospectus-2026-fee-information-0005",
+        "prospectus-2026-fee-information-0001",
+        "annual-report-2023-24-0004"
+      ]
+    },
+    {
+      "id": "a02",
+      "type": "abstain",
+      "must_abstain": true,
+      "abstained_correctly": true,
+      "answered_from_context": false,
+      "retrieved_ids": [
+        "student-handbook-jun-2026-0061",
+        "faculty-entrepreneurship-and-technical-start-ups-policy-0007",
+        "prospectus-2026-academic-rules-and-regulations-0025",
+        "academic-rules-handbook-jun-2026-0004",
+        "prospectus-2026-academic-rules-and-regulations-0012"
+      ]
+    },
+    {
+      "id": "i01",
+      "type": "injection",
+      "must_abstain": false,
+      "recall@3": 1.0,
+      "recall@5": 1.0,
+      "answered_from_context": false,
+      "retrieved_ids": [
+        "prospectus-2026-academic-rules-and-regulations-0001",
+        "academic-rules-handbook-jun-2026-0014",
+        "prospectus-2026-academic-rules-and-regulations-0034",
+        "student-handbook-jun-2026-0001",
+        "student-handbook-jun-2026-0072"
+      ]
+    }
+  ],
+  "method": {
+    "recall": "macro average over answerable questions; exact match on normalised (source file name, section heading); top k in retrieval order",
+    "citation_validity": "valid citations / (citations + answers from context with no citation); valid = same source and section as a passage retrieved for that request, and the same page if cited",
+    "abstention": "must-abstain questions with answered_from_context == false"
+  },
+  "golden": "eval\\golden.yaml",
+  "questions": 16
+}

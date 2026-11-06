@@ -1,0 +1,41 @@
+# GitHub branch protection (Step 5.3, 2026-11-06T11:28:26Z). Read-only gh commands; screenshots in docs/evidence/github/.
+
+## History, so nothing is overstated
+- 2026-11-03: the repository was public and main was protected (PR, 1 approval, enforce_admins, no force-push or
+  delete). The output was not saved at the time.
+- 2026-11-06, Step 5.2: the repository was PRIVATE on a free plan. GitHub answered HTTP 403 for branch protection
+  ("Upgrade to GitHub Pro or make this repository public"), and PR #1 into main showed mergeStateStatus CLEAN
+  with no review: nothing was enforced.
+- 2026-11-06, Step 5.3: the owner made the repository PUBLIC. GitHub then reported both branches as NOT protected
+  (HTTP 404 "Branch not protected": the old rules were gone). With the owner's explicit approval, the rules below
+  were created through the API.
+
+## Now
+$ gh repo view Swagger627/rahbar --json visibility
+{"visibility":"PUBLIC"}
+
+$ gh api repos/Swagger627/rahbar/branches/main/protection   (summarised with --jq)
+{"allow_deletions":false,"allow_force_pushes":false,"enforce_admins":true,"required_conversation_resolution":true,"required_pull_request_reviews":{"dismiss_stale_reviews":true,"required_approving_review_count":1},"required_status_checks":{"contexts":["lint","test","manifests","build (api)","build (indexer)","build (ui)","scan (api)","scan (indexer)","scan (ui)","e2e-eval","checker"],"strict":false}}
+
+$ gh api repos/Swagger627/rahbar/branches/dev/protection   (summarised with --jq)
+{"allow_deletions":false,"allow_force_pushes":false,"enforce_admins":true,"required_conversation_resolution":false,"required_pull_request_reviews":{"dismiss_stale_reviews":false,"required_approving_review_count":0},"required_status_checks":{"contexts":["lint","test","manifests","build (api)","build (indexer)","build (ui)","scan (api)","scan (indexer)","scan (ui)","e2e-eval","checker"],"strict":false}}
+
+- main: a pull request is required, with 1 approving review (stale approvals dismissed). All 11 ci.yml checks must
+  pass. Conversations must be resolved. No force-push and no deletion. enforce_admins = true: the owner cannot
+  bypass these rules either.
+- dev: a pull request is required (0 approvals), with the same 11 checks, enforce_admins = true, no force-push and
+  no deletion.
+
+## Proof that the rules are enforced, not just written down (screenshots in docs/evidence/github/)
+- 06-pr1-merge-blocked-needs-approval.jpg: PR #1 (dev -> main) says "Merging is blocked - At least 1 approving
+  review is required by reviewers with write access". The Merge button is greyed out.
+- 07-demo-pr3-gate-failed-merge-blocked.jpg: demo PR #3 (into dev) shows "1 failing, 10 successful checks",
+  ci / e2e-eval failing and Required. The Merge button is greyed out (mergeStateStatus BLOCKED). See github-gate-demo.txt.
+
+## Important limits
+- The approval on main must come from someone other than the author. Today the only other collaborator is
+  MugheesHiader476 (write access). Nobody has approved anything, and no approval was faked.
+- The owner plans to make the repository PRIVATE again. On a free plan, a private repository's protection rules
+  are kept but NOT enforced (that is what Step 5.2 measured). Enforcement then returns only with public visibility
+  or GitHub Pro. GitHub Pro enforces the same rules on private repositories: the 403 disappears, and the rules
+  above would apply as they do today.

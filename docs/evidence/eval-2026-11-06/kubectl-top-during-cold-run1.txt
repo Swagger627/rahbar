@@ -1,0 +1,33 @@
+# kubectl --context minikube -n rahbar top pods, sampled every 10 s during cold eval run 1 (UTC times)
+== 21:05:59
+NAME                     CPU(cores)   MEMORY(bytes)   
+api-84f7cd899d-hzcs7     5m           76Mi            
+api-84f7cd899d-kjvqs     3m           71Mi            
+api-84f7cd899d-sf266     3m           72Mi            
+chroma-0                 2m           46Mi            
+redis-7f8448bb6b-75s4k   8m           9Mi             
+ui-79fb995c5-wbhjp       2m           4Mi             
+== 21:06:09
+NAME                     CPU(cores)   MEMORY(bytes)   
+api-84f7cd899d-hzcs7     5m           76Mi            
+api-84f7cd899d-kjvqs     3m           71Mi            
+api-84f7cd899d-sf266     3m           72Mi            
+chroma-0                 2m           46Mi            
+redis-7f8448bb6b-75s4k   8m           9Mi             
+ui-79fb995c5-wbhjp       2m           4Mi             
+== 21:06:20
+NAME                     CPU(cores)   MEMORY(bytes)   
+api-84f7cd899d-hzcs7     5m           76Mi            
+api-84f7cd899d-kjvqs     3m           71Mi            
+api-84f7cd899d-sf266     3m           72Mi            
+chroma-0                 2m           46Mi            
+redis-7f8448bb6b-75s4k   8m           9Mi             
+ui-79fb995c5-wbhjp       2m           4Mi             
+== 21:06:30
+NAME                     CPU(cores)   MEMORY(bytes)   
+api-84f7cd899d-hzcs7     7m           78Mi            
+api-84f7cd899d-kjvqs     4m           73Mi            
+api-84f7cd899d-sf266     5m           75Mi            
+chroma-0                 3m           58Mi            
+redis-7f8448bb6b-75s4k   10m          9Mi             
+ui-79fb995c5-wbhjp       1m           4Mi             

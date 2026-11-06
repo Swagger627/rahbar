@@ -1,0 +1,38 @@
+# One entrance from outside the cluster (section 4.1): on the host rahbar.local,
+# /api goes to the api Service and everything else (/) to the ui Service. Paths are
+# passed on unchanged, so the UI's call to /api/ask reaches the API's /api/ask route.
+#
+# Uses minikube's nginx ingress controller: `minikube addons enable ingress`.
+# On Windows with the docker driver, run `minikube tunnel` in a second terminal, then:
+#   curl.exe -H "Host: rahbar.local" http://127.0.0.1/api/ask ...
+# or add the line `127.0.0.1 rahbar.local` to C:\Windows\System32\drivers\etc\hosts
+# and open http://rahbar.local in a browser.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rahbar
+  annotations:
+    # An answer can take up to 120 s (the model timeout) plus one retry on a slow CPU;
+    # nginx's default of 60 s would cut it off with a 504.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rahbar.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ui
+                port:
+                  number: 8080
