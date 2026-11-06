@@ -86,9 +86,15 @@ gates on recall@5.
   SHA images. It waits on `kubectl rollout status`, checks readiness and smoke tests through
   the Ingress.
 
-Publishing happens on a push to `dev` or `main`. Both are protected branches, so in practice
-that means **after an approved pull request is merged**. Pull requests themselves never
+Publishing happens only on a push to `dev` or `main`. A manual "Run workflow" on any other
+branch runs the tests but skips `build-push` and `deploy`. Pull requests themselves never
 publish anything.
+
+- **The team rule:** a push to `dev` or `main` happens only by merging a pull request that
+  passed `ci.yml`.
+- **What GitHub enforces today: nothing.** The repository is private on a free plan, so
+  branch protection, required checks and required reviews are not available
+  (`docs/evidence/github-branch-protection.txt`). It takes public visibility or GitHub Pro.
 
 ### Secrets needed
 

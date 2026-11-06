@@ -1,8 +1,12 @@
 # Continuous delivery (section 6): test -> build-push -> deploy.
 #
-# Runs on a push to dev or main. Both branches are protected, so a push there only
-# happens when an approved pull request (which already passed ci.yml) is merged.
-# It can also be started by hand from the Actions tab ("Run workflow"), for any branch.
+# Runs on a push to dev or main, which in this project only happens by merging a pull
+# request that passed ci.yml. That is a team rule: on this PRIVATE free-plan repository,
+# GitHub cannot enforce branch protection (docs/evidence/github-branch-protection.txt),
+# so ci.yml passing is not technically required before a merge. The test job below re-checks
+# the merged commit, and Trivy runs again before anything is pushed.
+# It can also be started by hand ("Run workflow"). On any branch other than dev or main,
+# only the test job runs: build-push and deploy are skipped.
 #
 #   test        lint, unit tests with coverage and manifest validation again, on the
 #               exact merged commit
@@ -86,10 +90,16 @@ jobs:
 
   build-push:
     needs: test
+    # Publish only from the two integration branches. "Run workflow" on any other branch still
+    # runs the tests, but never pushes an image built from unmerged code.
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
-      fail-fast: true          # publish all three images or none of the remaining ones
+      # The three images build in parallel. If one fails, the others are cancelled, but an image
+      # that was already pushed stays (under this commit's SHA). The deploy job only runs when
+      # all three succeeded, so a half-published commit is never deployed.
+      fail-fast: true
       matrix:
         image: [api, indexer, ui]
     steps:
