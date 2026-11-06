@@ -124,6 +124,21 @@ this file is the disclosure instead.
     repository, and `cd.yml` has never run.
   - **Owner approvals:** the team member approved the Docker Desktop socket-folder rename
     again for this step.
+- **Release audit (Step 5.3):** the AI audited the Git state, the secrets (names only), `cd.yml`
+  and the handout's requirements.
+  - **Workflow:** it limited `cd.yml`'s publishing to `dev`/`main`, and corrected comments
+    that overstated branch protection.
+  - **Security:** it fixed a newly published zlib CVE that CI's Trivy scan found in the ui
+    image.
+  - **Branch protection:** after the owner made the repository public and chose "full rules",
+    the AI set protection on `main` and `dev` through the API.
+  - **Gate demonstration:** it ran it with a temporary pull request: a fixture document
+    deleted, the eval gate failing, the merge blocked, then restored and green. The PR was
+    closed unmerged.
+  - **Screenshots:** the owner signed in to GitHub in the built-in browser themselves; the AI
+    took the screenshots.
+  - **What it did not do:** it did not merge anything, add secrets, or approve anything on
+    anyone's behalf.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is

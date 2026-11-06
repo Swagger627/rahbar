@@ -15,9 +15,9 @@ It is a retrieval-augmented generation (RAG) system on Kubernetes. Its parts:
   in **Redis**;
 - an original chat UI, **Lantern Trail**.
 
-The status badge covers `ci.yml` on this development branch. It is red while the
-assignment checker still reports gaps; every other job passes. The repository is private, so
-the badge only shows for collaborators.
+The status badge covers `ci.yml` on this development branch. Every job passes, including
+the assignment checker. While the repository is private, the badge shows only for
+collaborators.
 
 ![Lantern Trail: an answer from the documents, a cache hit, and the evidence trail](docs/evidence/ui/03-desktop-light-cache-hit-evidence.png)
 
@@ -229,8 +229,10 @@ the same gate. Details: [docs/CI-CD.md](docs/CI-CD.md).
   - `cd.yml` (Docker Hub publish and deploy) has never run: the Docker Hub secrets are not
     set, and it only runs after a merge into `dev`/`main`;
   - the `hosted` provider has not been tried against a real cloud endpoint;
-  - **branch protection is not enforced**: the repository is private on a free plan
-    ([docs/evidence/github-branch-protection.txt](docs/evidence/github-branch-protection.txt)).
+  - **the approval on `main`**: branch protection requires 1 approving review on `main`. It
+    was enforced and screenshotted while the repository was public
+    ([docs/evidence/github/](docs/evidence/github/README.md)), but nobody has approved yet.
+    A private repository on the free plan keeps the rules without enforcing them.
 - **The cluster needs the host.** `ollama-host` means the cluster depends on Ollama running
   on the host, at the address in the NetworkPolicy.
 

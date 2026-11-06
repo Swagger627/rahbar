@@ -1,10 +1,10 @@
 # Continuous delivery (section 6): test -> build-push -> deploy.
 #
 # Runs on a push to dev or main, which in this project only happens by merging a pull
-# request that passed ci.yml. That is a team rule: on this PRIVATE free-plan repository,
-# GitHub cannot enforce branch protection (docs/evidence/github-branch-protection.txt),
-# so ci.yml passing is not technically required before a merge. The test job below re-checks
-# the merged commit, and Trivy runs again before anything is pushed.
+# request that passed ci.yml. Branch protection on dev and main requires all 11 ci.yml
+# checks, but GitHub enforces it only while the repository is public, or on GitHub Pro
+# (docs/evidence/github-branch-protection.txt). The test job below re-checks the merged
+# commit either way, and Trivy runs again before anything is pushed.
 # It can also be started by hand ("Run workflow"). On any branch other than dev or main,
 # only the test job runs: build-push and deploy are skipped.
 #

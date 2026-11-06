@@ -92,9 +92,12 @@ publish anything.
 
 - **The team rule:** a push to `dev` or `main` happens only by merging a pull request that
   passed `ci.yml`.
-- **What GitHub enforces today: nothing.** The repository is private on a free plan, so
-  branch protection, required checks and required reviews are not available
-  (`docs/evidence/github-branch-protection.txt`). It takes public visibility or GitHub Pro.
+- **What GitHub enforces.** Branch protection on `main` (a PR, 1 approval, the 11 `ci.yml`
+  checks, no admin bypass) and on `dev` (a PR and the same checks) was set on 2026-11-06.
+  It was shown blocking merges while the repository was public
+  (`docs/evidence/github-branch-protection.txt`, `docs/evidence/github-gate-demo.txt`).
+  A private repository on the free plan keeps these rules but does not enforce them.
+  Enforcement needs public visibility or GitHub Pro.
 
 ### Secrets needed
 

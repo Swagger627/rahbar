@@ -1,22 +1,23 @@
-# Pull requests and reviews: what is true today (2026-11-05T21:31:46Z). Read-only gh commands.
+# Pull requests, reviews and merge state (2026-11-06T11:35:54Z). Read-only gh commands.
+# Step 5.2 (repository private, free plan): PR #1 showed mergeStateStatus CLEAN with no review, so nothing was enforced.
+# Step 5.3 (repository public, protection set with the owner's approval):
 
-$ gh pr view 1 --repo Swagger627/rahbar --json number,title,state,isDraft,baseRefName,headRefName,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews
-{"baseRefName":"main","headRefName":"dev","isDraft":false,"latestReviews":[],"mergeStateStatus":"CLEAN","mergeable":"MERGEABLE","number":1,"reviewDecision":"","reviewRequests":[],"state":"OPEN","title":"chore: repository hardening and corpus declaration"}
+$ gh pr view 1 --repo Swagger627/rahbar --json number,title,state,isDraft,baseRefName,headRefName,mergeStateStatus,reviewDecision,latestReviews
+{"baseRefName":"main","headRefName":"dev","isDraft":false,"latestReviews":[],"mergeStateStatus":"BLOCKED","number":1,"reviewDecision":"REVIEW_REQUIRED","state":"OPEN","title":"chore: repository hardening and corpus declaration"}
 
-$ gh pr view 2 --repo Swagger627/rahbar --json number,title,state,isDraft,baseRefName,headRefName,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews
-{"baseRefName":"dev","headRefName":"rag/retrieval-improvement","isDraft":true,"latestReviews":[],"mergeStateStatus":"UNSTABLE","mergeable":"MERGEABLE","number":2,"reviewDecision":"","reviewRequests":[],"state":"OPEN","title":"WIP: RAG pipeline milestones (corpus to grounded answers) - not ready to merge"}
+$ gh pr view 2 --repo Swagger627/rahbar --json number,title,state,isDraft,baseRefName,headRefName,mergeStateStatus,reviewDecision
+{"baseRefName":"dev","headRefName":"rag/retrieval-improvement","isDraft":true,"mergeStateStatus":"CLEAN","number":2,"reviewDecision":"","state":"OPEN","title":"WIP: RAG pipeline milestones (corpus to grounded answers) - not ready to merge"}
+
+$ gh pr view 3 --repo Swagger627/rahbar --json number,title,state,mergedAt
+{"mergedAt":null,"number":3,"state":"CLOSED","title":"DEMO (do not merge): the eval gate catches a corpus regression"}
 
 $ gh api repos/Swagger627/rahbar/collaborators --jq '[.[]|{login,role_name}]'
 [{"login":"Swagger627","role_name":"admin"},{"login":"MugheesHiader476","role_name":"write"}]
 
 ## What this means
-
-- PR #1 (dev -> main) has NO reviews and mergeStateStatus CLEAN: GitHub would let it merge. Merging is
-  NOT blocked today, because branch protection is not enforced on this private free-plan repository
-  (github-branch-protection.txt).
-- PR #2 (rag/retrieval-improvement -> dev) is a draft. It is UNSTABLE because the ci.yml "checker" job
-  fails (the honest remaining submission gaps), but no check is required, so that does not block it either.
-- No review was requested and none was given. MugheesHiader476 has write access but has not reviewed
-  anything yet, and nobody has reviewed on his behalf.
-- The section 6 demonstration (a PR that fails the eval gate, with a greyed-out merge button, then fixed
-  and green) needs enforced protection with required checks first. It has NOT been done.
+- PR #1 (dev -> main) is BLOCKED: main needs 1 approving review and the 11 ci.yml checks, and its old head commit
+  has never run them. The screenshot is docs/evidence/github/06-pr1-merge-blocked-needs-approval.jpg.
+- PR #2 (the feature branch -> dev) is a draft. Its 11 required checks pass on the latest commit; dev needs no approval.
+- PR #3 was the temporary gate demonstration (github-gate-demo.txt). It was closed without merging.
+- No review has been requested or given. MugheesHiader476 (write access) has not reviewed anything, and nobody has
+  reviewed on his behalf.
