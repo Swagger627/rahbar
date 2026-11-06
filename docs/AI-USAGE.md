@@ -26,7 +26,7 @@ this file is the disclosure instead.
 
 | Tool | What it wrote or shaped | What we changed afterwards, and why |
 | --- | --- | --- |
-| Claude Code (Anthropic, model Claude Opus 5.5), in the Claude desktop app | Corpus selection and verification scripts; the golden set; `eval/run_eval.py` and its tests; the Dockerfiles; all Kubernetes manifests; the indexer (extract, clean, chunk, embed, store); the API retriever, readiness checks, Ollama provider, grounding checks, prompt and Redis semantic cache; all unit tests; `docs/PIPELINE.md`, `docs/CORPUS.md`, `docs/DEPLOYMENT.md`, ADRs 0001 and 0003, and this file. It also ran the real measurements (OCR, embeddings, retrieval, answer evaluation) on the laptop, and reported the numbers in `docs/PIPELINE.md`. | Every change below was made because a real test or measurement showed a problem. It was then re-tested, and the before-and-after numbers are recorded in `docs/PIPELINE.md`. The fixes are listed after this table. |
+| Claude Code (Anthropic, model Claude Opus 5.5), in the Claude desktop app | Corpus selection and verification scripts; the golden set; `eval/run_eval.py` and its tests; the Dockerfiles; all Kubernetes manifests; the indexer (extract, clean, chunk, embed, store); the API retriever, readiness checks, Ollama provider, grounding checks, prompt and Redis semantic cache; all unit tests; `docs/PIPELINE.md`, `docs/CORPUS.md`, `docs/DEPLOYMENT.md`, `docs/CI-CD.md`, `docs/EVALUATION.md`, `docs/ARCHITECTURE.md`, `docs/FAILURE-ANALYSIS.md`, `docs/ENGINEERING-NOTES.md`, all four ADRs, the README, the GitHub Actions workflows, the chat UI, and this file. It also ran the real measurements (OCR, embeddings, retrieval, answer evaluation) on the laptop, and reported the numbers in `docs/PIPELINE.md`. | Every change below was made because a real test or measurement showed a problem. It was then re-tested, and the before-and-after numbers are recorded in `docs/PIPELINE.md`. The fixes are listed after this table. |
 | Ollama models `nomic-embed-text` and `llama3.2:3b` | These are **part of the product**, not development help: they embed the chunks and questions, and generate the answers. | Their real behaviour drove several of the changes below (the citation format, the injection filter, the relevance floor). |
 
 **Changes made after real tests or measurements:**
@@ -99,6 +99,31 @@ this file is the disclosure instead.
     overlapped text on phones.
   - **Its own slip:** one suggestion button led to a question the model declined. It was
     reworded to a phrasing the system answers with sources.
+- **Final evaluation, experiments and documents (Step 5.2):**
+  - **Code:**
+    - **The hosted provider:** the AI implemented it. A real call against a local
+      OpenAI-compatible endpoint exposed a missing-schema bug, which it fixed.
+    - **The section 4.8 metrics:** the AI added them, with tests.
+  - **On the cluster:**
+    - **Rollout:** it rolled the patched images onto minikube while probing for downtime.
+    - **Evaluation:** it ran the real-corpus evaluation (five cold runs).
+    - **Experiments:** it ran the four failure experiments, A, C, E and F.
+    - **Evidence:** it captured the evidence files.
+  - **Documents:** it wrote `FAILURE-ANALYSIS.md`, `ENGINEERING-NOTES.md`, `EVALUATION.md`,
+    `ARCHITECTURE.md`, ADRs 0002 and 0004, and the README.
+  - **Results checked by hand:** the AI read every answer of one run against the cited text.
+    That review found the wrong o04 answer and the o08 mis-citation that the automatic
+    checks pass.
+  - **Its own slips, corrected:**
+    - it first called a `wget` test of ui-to-redis "blocked", although it could not tell;
+      it re-tested with a plain TCP connect;
+    - leftover one-off processes of its own inflated an api pod's memory in a `kubectl top`
+      capture; it stopped them and re-captured;
+    - its first fix for the CI webhook race waited for Jobs that do not exist (Step 4.3).
+  - **Reported, not hidden:** branch protection is not available on the private free-plan
+    repository, and `cd.yml` has never run.
+  - **Owner approvals:** the team member approved the Docker Desktop socket-folder rename
+    again for this step.
 - **Bugs found by the AI's own unit tests and fixed:** "1.21" matching "11.21"; overlap
   pushing chunks past their size limit.
 - **Corrected over-claims:** the Step 3.5B answer review was corrected in Step 3.5C (o01 is

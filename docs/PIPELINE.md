@@ -1,6 +1,8 @@
 # Indexing and retrieval pipeline
 
-<!-- STARTER-TODO(3.1, 3.3, 5.2): fill each section with your numbers, then delete this comment. -->
+This file records how each stage was built and measured during development (Steps 3.x).
+The final evaluation of the finished system on the real corpus, through the Kubernetes
+Ingress, is in [EVALUATION.md](EVALUATION.md).
 
 ## Extraction
 Code: `indexer/pipeline/extract.py`. pdfplumber reads each page's text layer. Any page with
