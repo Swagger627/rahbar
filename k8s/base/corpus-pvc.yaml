@@ -1,0 +1,15 @@
+# The seven verified PDFs and their _index.json (names, versions, SHA-256) for the
+# indexer Job and the reindex CronJob. The PDFs stay out of Git and out of every image:
+# they are copied in once with corpus-loader.yaml (docs/DEPLOYMENT.md, "Load the corpus"),
+# and the indexer re-checks every SHA-256 before it indexes.
+# About 35 MB today; 1Gi leaves room for new editions.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: corpus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

@@ -23,3 +23,67 @@ venv/
 # Local scratch
 *.log
 .DS_Store
+
+# --- Added for RAHBAR (Windows-first workflow) ---
+
+# More secrets and credentials: private keys, certificates, cloud and registry logins
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials.json
+service-account*.json
+.netrc
+.pypirc
+.docker/
+# A documented template of the variable names (no values) may be committed
+!.env.example
+
+# Local Kubernetes configuration: never commit cluster credentials
+.kube/
+*.kubeconfig
+kubeconfig.*
+
+# Downloaded documents and archives: commit corpus/MANIFEST.md and the fetch script instead
+*.pdf
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+# ...except PDFs we write ourselves for the docs
+!docs/**/*.pdf
+
+# Test and coverage output (CI regenerates it)
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Python build artefacts and other virtual environments
+*.egg-info/
+*.pyo
+.eggs/
+env/
+.python-version
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+tmp/
+.cache/
+node_modules/

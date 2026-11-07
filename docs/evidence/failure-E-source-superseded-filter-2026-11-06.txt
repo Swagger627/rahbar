@@ -1,0 +1,95 @@
+# Failure experiment E - Source: the superseded filter removed, then a version-sensitive question (section 5.5, stage E)
+# Run on the laptop, 2026-11-06T10:33:30Z: the real api code, the real 431-chunk index (local rahbar-chroma-real, built with OCR),
+# llama3.2:3b and nomic-embed-text through Ollama, no Redis (nothing cached). No repository file was changed: a one-off launcher
+# patched ChromaRetriever._search in memory so that it ignores the superseded filter (superseded=None on every search).
+#   mode none          = the healthy api (no patch)
+#   mode filter        = filter removed; the [SUPERSEDED: ...] label that the retriever adds to old passages is kept
+#   mode filter+label  = filter AND label removed: no version handling at all
+# v01 = 'If I fail a course, when do I have to register for it again?'  2026 rule (clause 5.8, current): in the subsequent semester.
+#                                                                     2023 rule (clause 5.8, superseded): whenever it is offered again.
+# Each mode: the golden set with the section 5.4 gate, then v01 asked three times (the model is not deterministic).
+
+## 1. Healthy state
+### mode: none
+EXPERIMENT E: none
+  recall@3                 1.0
+  recall@5                 1.0
+  citation_validity        1.0
+  abstention_correctness   1.0
+gate passed
+recall@5 by type: {"abstain": null, "exact": 1.0, "injection": 1.0, "ordinary": 1.0, "version": 1.0}
+v01 try 1: answered_from_context=True | answer: 'You have to register for the course again in the subsequent semester.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', 'Repeating a Course', 25)]
+   superseded (2023) chunks retrieved: []
+v01 try 2: answered_from_context=False | answer: 'The documents I have do not cover this question, so I cannot answer it. Please check with the university office.'
+   citations: []
+   superseded (2023) chunks retrieved: []
+v01 try 3: answered_from_context=True | answer: 'A student must repeat all failed courses in the subsequent semester (if Offered), and students should not be allowed to skip its registration.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', 'Repeating a Course', 25), ('prospectus-2026-academic-rules-and-regulations.pdf', '17. Repeating a Course', 3)]
+   superseded (2023) chunks retrieved: []
+
+## 2-3. Break it (filter removed) and the symptom
+### mode: filter
+EXPERIMENT E: filter
+  recall@3                 0.928571
+  recall@5                 0.928571
+  citation_validity        1.0
+  abstention_correctness   1.0
+GATE FAILED
+  - recall@5 fell 7.1 points: 92.9% against a baseline of 100.0% (at most 5 allowed)
+recall@5 by type: {"abstain": null, "exact": 0.666667, "injection": 1.0, "ordinary": 1.0, "version": 1.0}
+v01 try 1: answered_from_context=True | answer: 'Whenever that course is offered again.'
+   citations: [('prospectus-2026-academic-rules-and-regulations.pdf', '17. Repeating a Course', 3), ('undergraduate-academic-rules-aug-2023.pdf', 'Repeating a Course', 17)]
+   superseded (2023) chunks retrieved: ['undergraduate-academic-rules-aug-2023-0018', 'undergraduate-academic-rules-aug-2023-0028']
+v01 try 2: answered_from_context=True | answer: 'Whenever that course is offered again.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', '4. Registration', 19)]
+   superseded (2023) chunks retrieved: ['undergraduate-academic-rules-aug-2023-0018', 'undergraduate-academic-rules-aug-2023-0028']
+v01 try 3: answered_from_context=True | answer: 'A student must repeat a course in which s/he gets an F grade, whenever that course is offered again.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', '4. Registration', 19), ('undergraduate-academic-rules-aug-2023.pdf', 'Repeating a Course', 17)]
+   superseded (2023) chunks retrieved: ['undergraduate-academic-rules-aug-2023-0018', 'undergraduate-academic-rules-aug-2023-0028']
+
+## 2-3 (second variant). Filter and label removed
+### mode: filter+label
+EXPERIMENT E: filter+label
+  recall@3                 0.928571
+  recall@5                 0.928571
+  citation_validity        1.0
+  abstention_correctness   1.0
+GATE FAILED
+  - recall@5 fell 7.1 points: 92.9% against a baseline of 100.0% (at most 5 allowed)
+recall@5 by type: {"abstain": null, "exact": 0.666667, "injection": 1.0, "ordinary": 1.0, "version": 1.0}
+v01 try 1: answered_from_context=True | answer: 'When you fail a course, you have to register for it again when it is offered again.'
+   citations: [('undergraduate-academic-rules-aug-2023.pdf', 'Repeating a Course', 17)]
+   superseded (2023) chunks retrieved: ['undergraduate-academic-rules-aug-2023-0018', 'undergraduate-academic-rules-aug-2023-0028']
+v01 try 2: answered_from_context=True | answer: 'The student must register for the course again when it is offered again.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', 'Repeating a Course', 25)]
+   superseded (2023) chunks retrieved: ['undergraduate-academic-rules-aug-2023-0018', 'undergraduate-academic-rules-aug-2023-0028']
+v01 try 3: answered_from_context=True | answer: 'The student must repeat the course in which s/he failed, whenever that course is offered again.'
+   citations: [('prospectus-2026-academic-rules-and-regulations.pdf', '17. Repeating a Course', 3), ('undergraduate-academic-rules-aug-2023.pdf', 'Repeating a Course', 17)]
+   superseded (2023) chunks retrieved: ['undergraduate-academic-rules-aug-2023-0018', 'undergraduate-academic-rules-aug-2023-0028']
+
+## 4. Diagnosis: why the exact-clause question e01 lost its recall when the filter was removed
+#    (retrieved chunk ids for the exact questions, healthy vs filter removed; the 2023 rules also have a clause 1.21)
+none e01 recall@5= 1.0 ['academic-rules-handbook-jun-2026-0014', 'academic-rules-handbook-jun-2026-0001', 'student-handbook-jun-2026-0002', 'prospectus-2026-academic-rules-and-regulations-0035', 'student-handbook-jun-2026-0003']
+filter e01 recall@5= 0.0 ['undergraduate-academic-rules-aug-2023-0009', 'undergraduate-academic-rules-aug-2023-0001', 'academic-rules-handbook-jun-2026-0001', 'undergraduate-academic-rules-aug-2023-0003', 'student-handbook-jun-2026-0002']
+
+## 5. Remedy: restore the filter (the unpatched api, as deployed)
+
+## 6. Verify recovery
+### mode: none
+EXPERIMENT E: none
+  recall@3                 1.0
+  recall@5                 1.0
+  citation_validity        1.0
+  abstention_correctness   1.0
+gate passed
+recall@5 by type: {"abstain": null, "exact": 1.0, "injection": 1.0, "ordinary": 1.0, "version": 1.0}
+v01 try 1: answered_from_context=True | answer: 'You have to register for the course again in the subsequent semester.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', 'Repeating a Course', 25)]
+   superseded (2023) chunks retrieved: []
+v01 try 2: answered_from_context=True | answer: 'You have to register for the course again in the subsequent semester.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', 'Repeating a Course', 25)]
+   superseded (2023) chunks retrieved: []
+v01 try 3: answered_from_context=True | answer: 'You have to register for the course again in the subsequent semester.'
+   citations: [('academic-rules-handbook-jun-2026.pdf', 'Repeating a Course', 25)]
+   superseded (2023) chunks retrieved: []

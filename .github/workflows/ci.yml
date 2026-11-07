@@ -1,0 +1,226 @@
+# Continuous integration (section 6). Runs on every pull request into dev or main, and on
+# every push to dev (a merged pull request). Nothing here publishes anything: images are
+# built and scanned but never pushed (that is cd.yml).
+#
+#   lint       ruff + mypy
+#   test       pytest for api, indexer and eval (stubs only: no model, no network);
+#              coverage of the api's app package must be at least 60%
+#   manifests  kustomize build of both overlays | kubeconform -strict
+#   build      the three images, after lint, test and manifests pass (no push)
+#   scan       Trivy on each image; fails on HIGH or CRITICAL with a fix available
+#   e2e-eval   a kind cluster on the runner: real manifests, real indexer Job on the
+#              fictional fixture corpus, real models in Ollama on the runner, rollout,
+#              questions through the Ingress, and the eval gate (scripts/e2e-kind.sh)
+#   checker    scripts/check_submission.py, reported as it is (it still lists real gaps)
+#
+# Every action is pinned to a full commit SHA (the version is in the comment).
+name: ci
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+# Least privilege: the jobs only read the repository.
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the older, now pointless, run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash          # bash -eo pipefail: a failing command in a pipe fails the step
+
+env:
+  PYTHON_VERSION: "3.12"            # the same Python as the images
+  KUBECONFORM_VERSION: v0.8.0
+  TRIVY_VERSION: v0.76.2
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            api/requirements*.txt
+            indexer/requirements*.txt
+      - name: Install pinned dependencies
+        run: pip install -r api/requirements-dev.txt -r indexer/requirements-dev.txt
+      - name: ruff
+        run: ruff check api indexer eval corpus
+      - name: mypy
+        run: |
+          (cd api && mypy app)
+          (cd indexer && mypy pipeline)
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RETRIEVER: stub       # the defaults, written out: no Chroma, no model, no network
+      LLM_PROVIDER: stub
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            api/requirements*.txt
+            indexer/requirements*.txt
+      - name: Install pinned dependencies
+        run: pip install -r api/requirements-dev.txt -r indexer/requirements-dev.txt
+      - name: pytest api (coverage of app must be at least 60%)
+        working-directory: api
+        run: pytest -q --cov=app --cov-report=term-missing --cov-fail-under=60
+      - name: pytest indexer
+        working-directory: indexer
+        run: pytest -q --cov=pipeline --cov-report=term-missing --cov-fail-under=60
+      - name: pytest eval (the scoring rules of run_eval.py)
+        run: pytest -q eval/tests
+
+  manifests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install kubeconform (checksum verified)
+        run: |
+          base=https://github.com/yannh/kubeconform/releases/download/$KUBECONFORM_VERSION
+          curl -sSfLO "$base/kubeconform-linux-amd64.tar.gz"
+          curl -sSfLO "$base/CHECKSUMS"
+          grep " kubeconform-linux-amd64.tar.gz$" CHECKSUMS | sha256sum -c -
+          tar -xzf kubeconform-linux-amd64.tar.gz kubeconform
+          sudo mv kubeconform /usr/local/bin/
+      - name: kustomize build | kubeconform -strict
+        run: |
+          for overlay in prod dev; do
+            echo "--- k8s/overlays/$overlay"
+            kubectl kustomize "k8s/overlays/$overlay" | kubeconform -strict -summary
+          done
+          echo "--- the hand-applied manifests (corpus loader, first indexer Job)"
+          kubeconform -strict -summary k8s/base/corpus-loader.yaml k8s/base/indexer-job.yaml
+
+  build:
+    needs: [lint, test, manifests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [api, indexer, ui]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build (never pushed from CI)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.image }}
+          push: false
+          tags: rahbar-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max
+
+  scan:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [api, indexer, ui]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Load the image built by the build job (from the build cache)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.image }}
+          push: false
+          load: true
+          tags: rahbar-${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+      - name: Trivy (fail on HIGH or CRITICAL with a fix available)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: rahbar-${{ matrix.image }}:${{ github.sha }}
+          version: ${{ env.TRIVY_VERSION }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+  e2e-eval:
+    needs: [test, manifests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install the eval runner's dependencies (pinned)
+        run: pip install httpx==0.28.1 pyyaml==6.0.2
+      # The two models (about 2.3 GB) are pulled once on GitHub's runner, then cached.
+      # They never touch the laptop.
+      - name: Cache the Ollama models
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.ollama/models
+          key: ollama-0.40.14-nomic-embed-text-llama3.2-3b
+      - name: Create a kind cluster
+        uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
+        with:
+          version: v0.33.0
+          cluster_name: rahbar
+      - name: Deploy, index the fixtures, ask, and run the eval gate
+        env:
+          OUT: e2e-out
+        run: bash scripts/e2e-kind.sh
+      - name: Upload the e2e logs and eval results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-eval-${{ github.sha }}
+          path: e2e-out/
+          retention-days: 14
+
+  checker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      # Run exactly as shipped. It exits non-zero while the submission still has gaps
+      # (missing evidence files and documents that later steps write); that red result
+      # is the honest state, so nothing hides it.
+      - name: Assignment checker
+        run: python scripts/check_submission.py

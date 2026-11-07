@@ -1,0 +1,31 @@
+# Section 6 demonstration: a pull request that fails the eval gate, a greyed-out merge button, then a fix and green.
+# 2026-11-06, temporary pull request #3 (demo/eval-gate-failure -> dev). Closed WITHOUT merging, and its branch was deleted.
+# Screenshots: docs/evidence/github/07-demo-pr3-gate-failed-merge-blocked.jpg and 08-demo-pr3-fixed-all-checks-green.jpg.
+
+## The regression
+Commit efec11d deleted eval/fixtures/fees-2026.md: a corpus file "lost in a clean-up". No unit test reads it, so only
+the e2e-eval gate can notice. The golden set, the thresholds and the gate were NOT changed.
+f04 ("How much is the BS fee per credit hour?") can then no longer retrieve its relevant passage.
+
+## Run 1 (before protection), 2026-11-06: https://github.com/Swagger627/rahbar/actions/runs/42207238333
+e2e-eval failed with the same message as below. The same run also caught a REAL new CVE in the ui image (zlib
+CVE-2026-85091), which was fixed on the release branch in commit 768b774. This run happened while dev was not
+protected, so the merge was not blocked yet.
+
+## Run 2 (dev protected: all 11 ci.yml checks required, no admin bypass): https://github.com/Swagger627/rahbar/actions/runs/42209570969
+Every job passed except e2e-eval. Its log:
+  recall@3                 0.8
+  recall@5                 0.8
+  citation_validity        1.0
+  abstention_correctness   1.0
+GATE FAILED
+  - recall@5 fell 20.0 points: 80.0% against a baseline of 100.0% (at most 5 allowed)
+GitHub then reported for PR #3: mergeStateStatus BLOCKED. The page showed "1 failing, 10 successful checks", with
+"ci / e2e-eval (pull_request) Failing after 5m - Required", and a greyed-out "Merge pull request" button (screenshot 07).
+
+## The fix: commit 23c25d3 restored the file. Run 3: https://github.com/Swagger627/rahbar/actions/runs/42210478241
+All 11 checks passed. mergeStateStatus CLEAN: "All checks have passed - 11 successful checks", and the Merge button
+became active (screenshot 08). It was NOT clicked: the pull request was closed unmerged, with a comment.
+
+$ gh pr view 3 --repo Swagger627/rahbar --json state,mergedAt
+{"mergedAt":null,"state":"CLOSED"}

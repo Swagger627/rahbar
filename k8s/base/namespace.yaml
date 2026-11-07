@@ -1,0 +1,5 @@
+# Everything RAHBAR runs lives in this namespace, never in "default" (section 4.1).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rahbar
