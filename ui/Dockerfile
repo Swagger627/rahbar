@@ -20,8 +20,10 @@ FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a
 # -117610, -118370) have fixed versions in Alpine 3.24, so only those are upgraded here.
 # zlib (HIGH CVE-2026-85091, heap overflow in gz_vacate, fixed in 1.3.2-r1) was added on
 # 2026-11-06, when CI's Trivy scan found it after the CVE was published.
+# musl and musl-utils (HIGH CVE-2026-107891, integer overflow leading to code execution, fixed
+# in 1.2.6-r3) were added on 2026-11-08, after the CD run on main failed its Trivy scan.
 USER root
-RUN apk upgrade --no-cache brotli-libs curl libcurl libexpat zlib \
+RUN apk upgrade --no-cache brotli-libs curl libcurl libexpat zlib musl musl-utils \
  && rm -f /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*.html \
  && rm -rf /docker-entrypoint.d /docker-entrypoint.sh
 COPY nginx.conf /etc/nginx/nginx.conf

@@ -25,8 +25,11 @@ RUN python -m venv /opt/venv \
 FROM python:3.12.16-slim-trixie@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54 AS runtime
 # tesseract-ocr (with its English data) reads scanned pages; poppler-utils provides
 # pdftoppm for pdf2image and pdffonts for detecting pages with no text layer.
+# zlib1g is upgraded too: the base image's version has HIGH CVE-2026-76844 and
+# CVE-2026-85091 (fixed in 1:1.3.dfsg+really1.3.1-1+deb13u1).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends tesseract-ocr poppler-utils \
+ && apt-get install -y --only-upgrade --no-install-recommends zlib1g \
  && rm -rf /var/lib/apt/lists/*
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
