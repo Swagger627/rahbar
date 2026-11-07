@@ -94,7 +94,7 @@ and not on the model's words.
 | Cold, model called (runs 1 and 2, 30 answers) | median **1.69 s**, from 0.97 s to 8.11 s (the first question pays the model load) |
 | Abstention below the relevance floor (a02, no model call) | 0.07-0.10 s |
 | Cached (warm run straight after run 1) | **0.03-0.06 s** for the 8 answers in the cache (o03, o04, o05, o06, o08, e01, e02, e03) |
-| Not cached, by design | o01, o02, o07, v01, v02, a01, i01 were regenerated (0.7-4.7 s): abstentions and history questions are never cached |
+| Regenerated, not served from the cache | o01, o02, o07, v01, v02, a01, i01 (0.7-4.7 s). Six of them had been declined in run 1, and abstentions are never cached: o01, o07, v01, v02, a01 and i01. o02 had been answered in run 1; why it was not reused was not recorded |
 
 During cold run 1, the api pods used at most **7m CPU and 78 MiB**
 (`docs/evidence/eval-2026-11-06/kubectl-top-during-cold-run1.txt`). The time is spent in
