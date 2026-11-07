@@ -27,6 +27,11 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     HOME=/tmp \
     TMPDIR=/tmp
+# zlib1g from the base image has HIGH CVE-2026-76844 and CVE-2026-85091 (fixed in
+# 1:1.3.dfsg+really1.3.1-1+deb13u1); upgrade only that package until a newer base ships it.
+RUN apt-get update \
+ && apt-get install -y --only-upgrade --no-install-recommends zlib1g \
+ && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 10001 rahbar \
  && useradd --system --uid 10001 --gid rahbar --no-create-home --shell /usr/sbin/nologin rahbar
 COPY --from=build /opt/venv /opt/venv
