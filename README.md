@@ -54,8 +54,10 @@ flowchart LR
    answered_from_context, confidence).
 5. **Citation check:** every citation must match a passage retrieved for this request. The
    model gets one retry; after a second bad reply, RAHBAR gives a safe refusal.
-6. **Store:** a grounded answer is cached for 1 hour. Abstentions and questions about old
-   rules are never cached.
+6. **Store:** a grounded, cited answer is cached for 1 hour. Abstentions and safe refusals
+   are never cached. A question about an old edition is cached like any other answer, but
+   it can only be reused by another question about an old edition: "history" is one of the
+   key terms the two questions must share.
 
 More detail:
 - why Chroma is a StatefulSet, and the allowed network paths: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md);
