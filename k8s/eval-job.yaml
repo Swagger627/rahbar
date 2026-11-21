@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ragops-eval
+  namespace: rahbar-a3
+spec:
+  backoffLimit: 0
+  # Two complete runs, with generation and judging, can exceed an hour on CPU.
+  activeDeadlineSeconds: 10800
+  template:
+    metadata:
+      labels:
+        app: ragops-eval
+    spec:
+      restartPolicy: Never
+      enableServiceLinks: false
+      serviceAccountName: ragops-eval
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: evaluation
+          image: rahbar-eval:a3
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+            - configMapRef:
+                name: ragops-eval-target
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          volumeMounts:
+            - {name: results, mountPath: /results}
+            - {name: traces, mountPath: /traces, readOnly: true}
+            - {name: gate, mountPath: /gate, readOnly: true}
+      volumes:
+        - name: results
+          persistentVolumeClaim:
+            claimName: ragops-results
+        - name: traces
+          persistentVolumeClaim:
+            claimName: ragops-traces
+            readOnly: true
+        - name: gate
+          configMap:
+            name: ragops-gate
