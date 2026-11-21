@@ -149,6 +149,9 @@ def main() -> int:
                         help="extract, clean and chunk only; print a summary, write nothing")
     parser.add_argument("--verify-corpus", action="store_true",
                         help="only check the corpus files against their SHA-256, then exit")
+    versions = parser.add_mutually_exclusive_group()
+    versions.add_argument("--restore", metavar="DOCUMENT_ID=VERSION")
+    versions.add_argument("--latest", metavar="DOCUMENT_ID")
     args = parser.parse_args()
     settings = get_settings()
     log("indexer starting", dummy=args.dummy, embed_model=settings.embed_model,
@@ -167,6 +170,14 @@ def main() -> int:
                 raise RuntimeError(f"no _index.json in {settings.corpus_dir}: nothing verified")
         elif args.dry_run:
             count = dry_run(settings)
+        elif lake := os.environ.get("RAGOPS_DIR"):
+            from .ragops import ingest
+
+            count = ingest(settings, Path(lake), Path(os.environ.get("RESULTS_DIR", "/results")),
+                           float(os.environ.get("NEAR_DUPLICATE_THRESHOLD", "0.97")),
+                           args.restore, args.latest)
+        elif args.restore or args.latest:
+            parser.error("version changes require RAGOPS_DIR")
         else:
             count = run_pipeline(settings)
     except RuntimeError as exc:   # embed or store refused: say why, fail the Job
