@@ -1,0 +1,12 @@
+$ kubectl --context rahbar -n rahbar-a3 set env deploy/api CHROMA_COLLECTION=rahbar-a3-missing-drill
+deployment.apps/api env updated
+$ kubectl --context rahbar -n rahbar-a3 rollout status deploy/api --timeout=25s
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+error: timed out waiting for the condition
+$ kubectl --context rahbar -n rahbar-a3 rollout undo deploy/api
+Warning: resource deployments/api was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.
+deployment.apps/api rolled back
+$ kubectl --context rahbar -n rahbar-a3 rollout status deploy/api --timeout=120s
+Waiting for deployment spec update to be observed...
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+deployment "api" successfully rolled out
