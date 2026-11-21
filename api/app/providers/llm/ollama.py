@@ -9,6 +9,7 @@ import logging
 import httpx
 from pydantic import ValidationError
 
+from ... import trace
 from ...config import Settings
 from ...routes.metrics import TOKENS
 from ...schemas import Answer, Passage
@@ -58,13 +59,15 @@ class OllamaProvider:
         if problem:
             messages.append(retry_message(problem, passages))
         url = self.settings.ollama_url.rstrip("/") + "/api/chat"
+        options: dict[str, float | int] = {"temperature": self.settings.temperature}
+        if self.settings.seed is not None:
+            options["seed"] = self.settings.seed
+        schema = Answer.model_json_schema()
+        trace.prompt(messages, {"model": self.settings.llm_model, "options": options, "format": schema})
         try:
             response = httpx.post(url, json={
-                "model": self.settings.llm_model,
-                "messages": messages,
-                "stream": False,
-                "format": Answer.model_json_schema(),     # constrained decoding to our schema
-                "options": {"temperature": self.settings.temperature},
+                "model": self.settings.llm_model, "messages": messages, "stream": False,
+                "format": schema, "options": options,
             }, timeout=httpx.Timeout(GENERATE_TIMEOUT_SECONDS, connect=CONNECT_SECONDS))
         except httpx.HTTPError as exc:
             raise RuntimeError(f"LLM unreachable: {type(exc).__name__}") from exc

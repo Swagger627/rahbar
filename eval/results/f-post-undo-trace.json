@@ -1,0 +1,175 @@
+{
+  "event": "rag_query",
+  "trace_id": "7d71090656344759a4e6cf62bb59ec20",
+  "request_id": "548fea04522c49f1a46ac13428f6121e",
+  "timestamp": "2026-11-21T05:53:45.885977+00:00",
+  "query": "How many grade points is a B- worth?",
+  "rewritten_query": null,
+  "embedding_model": "nomic-embed-text",
+  "embedding_version": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+  "collection": "rahbar-a3-baseline",
+  "collection_version": "6de487f3ac3a0c82",
+  "retrieved": [
+    {
+      "chunk_id": "3ce811dd5c5d16ab3fb2b454-000018",
+      "source": "academic-rules-handbook-jun-2026.pdf",
+      "section": "Grade Points",
+      "page": 12,
+      "pages": [
+        12
+      ],
+      "document_id": "academic-rules",
+      "doc_version": "2026-06",
+      "score": 0.72214043
+    },
+    {
+      "chunk_id": "b37056a2dcc3b745a3d27a52-000006",
+      "source": "prospectus-2026-academic-rules-and-regulations.pdf",
+      "section": "6. Letter Grades and Grade Points",
+      "page": 1,
+      "pages": [
+        1
+      ],
+      "document_id": "prospectus-rules",
+      "doc_version": "2026",
+      "score": 0.70793027
+    },
+    {
+      "chunk_id": "b37056a2dcc3b745a3d27a52-000008",
+      "source": "prospectus-2026-academic-rules-and-regulations.pdf",
+      "section": "7. Grade Point Average",
+      "page": 1,
+      "pages": [
+        1,
+        2
+      ],
+      "document_id": "prospectus-rules",
+      "doc_version": "2026",
+      "score": 0.67620176
+    },
+    {
+      "chunk_id": "3ce811dd5c5d16ab3fb2b454-000003",
+      "source": "academic-rules-handbook-jun-2026.pdf",
+      "section": "2. Grading and GPA Calculations 5",
+      "page": 5,
+      "pages": [
+        5
+      ],
+      "document_id": "academic-rules",
+      "doc_version": "2026-06",
+      "score": 0.67397094
+    },
+    {
+      "chunk_id": "3ce811dd5c5d16ab3fb2b454-000016",
+      "source": "academic-rules-handbook-jun-2026.pdf",
+      "section": "Grade Point Average",
+      "page": 11,
+      "pages": [
+        11
+      ],
+      "document_id": "academic-rules",
+      "doc_version": "2026-06",
+      "score": 0.6499287
+    }
+  ],
+  "filters": [
+    {
+      "superseded": false
+    }
+  ],
+  "reranked_order": [
+    "3ce811dd5c5d16ab3fb2b454-000018",
+    "b37056a2dcc3b745a3d27a52-000006",
+    "b37056a2dcc3b745a3d27a52-000008",
+    "3ce811dd5c5d16ab3fb2b454-000003",
+    "3ce811dd5c5d16ab3fb2b454-000016"
+  ],
+  "context": [
+    {
+      "chunk_id": "3ce811dd5c5d16ab3fb2b454-000018",
+      "text": "Grade Points\n2.3 The points for each letter grade are given as follows: Grade Points Grade Points A+ 4.00 C+ 2.33 A 4.00 C 2.00 A- 3.67 C- 1.67 B+ 3.33 D+ 1.33 B 3.00 D 1.00 B- 2.67 F 0.00",
+      "source": "academic-rules-handbook-jun-2026.pdf",
+      "section": "Grade Points",
+      "page": 12,
+      "pages": [
+        12
+      ],
+      "document_id": "academic-rules",
+      "doc_version": "2026-06",
+      "score": 0.72214043
+    },
+    {
+      "chunk_id": "b37056a2dcc3b745a3d27a52-000006",
+      "text": "6. Letter Grades and Grade Points\nEach letter grade has corresponding numeric points. The points are used for calculating the Grade Point Average (GPA). Letter grades for BS & BBA programs: Grade Points Grade Points A+ 4.00 C+ 2.33 A 4.00 C 2.00 A- 3.67 C- 1.67 B+ 3.33 D+ 1.33 B 3.00 D 1.00 B- 2.67 F 0.00 I and W grades are not used in computing GPA. The I grade is replaced by the earned grade on completion of course requirements. It converts to F grade during the next semester if course requirements are not completed. CN (continue Research) grade is allowed only once in MS Thesis-II and in each of PhD Thesis I/II/III/IV. S (Satisfactory) or U (Unsatisfactory) is awarded for PhD Thesis work only and is not considered in GPA calculation. Letter grades for MS & MBA programs: Grade Points Grade Points A+ 4.00 B- 2.67 A 4.00 C+ 2.33 A- 3.67 C 2.00 B+ 3.33 F 1.00 B 3.00 Letter grades for PhD programs: A+ 4.00 B 3.00 A 4.00 B- 2.67 A- 3.67 F 0.00 B+ 3.33 The following letter grades are common to all degree programs:",
+      "source": "prospectus-2026-academic-rules-and-regulations.pdf",
+      "section": "6. Letter Grades and Grade Points",
+      "page": 1,
+      "pages": [
+        1
+      ],
+      "document_id": "prospectus-rules",
+      "doc_version": "2026",
+      "score": 0.70793027
+    },
+    {
+      "chunk_id": "b37056a2dcc3b745a3d27a52-000008",
+      "text": "7. Grade Point Average\nThe Grade Point Average (GPA) provides a continuous scale (0.00 to 4.00) for grades earned. Two types of averages are computed using the grades obtained by the student, the Semester Grade Point Average (SGPA) and the Cumulative Grade Point Average (CGPA). SGPA is the weighted average of grade points earned in a semester. The weights are taken as the ratio of course credit hours to the total credit hours taken by the student in the semester. CGPA Academic Rules and Regulations is the weighted average of all the courses taken so far. For repeat courses, only the most recent grade points are used (even if they are less than the earlier attempts).",
+      "source": "prospectus-2026-academic-rules-and-regulations.pdf",
+      "section": "7. Grade Point Average",
+      "page": 1,
+      "pages": [
+        1,
+        2
+      ],
+      "document_id": "prospectus-rules",
+      "doc_version": "2026",
+      "score": 0.67620176
+    },
+    {
+      "chunk_id": "3ce811dd5c5d16ab3fb2b454-000003",
+      "text": "2. Grading and GPA Calculations 5\nGrade Point Average 5 Interpretation of Letter Grades 5 Grade Points 6 GPA Calculation 6",
+      "source": "academic-rules-handbook-jun-2026.pdf",
+      "section": "2. Grading and GPA Calculations 5",
+      "page": 5,
+      "pages": [
+        5
+      ],
+      "document_id": "academic-rules",
+      "doc_version": "2026-06",
+      "score": 0.67397094
+    }
+  ],
+  "generation_attempts": [],
+  "model": "llama3.2:3b",
+  "model_parameters": {
+    "temperature": 0.2,
+    "seed": 4032
+  },
+  "response": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+  "citations": [],
+  "guardrail_actions": [
+    {
+      "action": "drop_below_relevance",
+      "chunk_id": "3ce811dd5c5d16ab3fb2b454-000016",
+      "score": 0.6499287
+    }
+  ],
+  "latency_ms": {
+    "query_embedding": 344.785,
+    "retrieval": 364.559,
+    "guardrails": 1.225,
+    "total": 366.544
+  },
+  "cache": "off",
+  "evaluation": true,
+  "retrieval_only": true,
+  "index_profile": "nomic-embed-text@0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f/400/50/pages-v1",
+  "top_k": 5,
+  "ranking_method": "exact clause promotion then similarity",
+  "requested_clause_refs": [],
+  "relevance_floor": 0.65,
+  "outcome": "retrieval_only",
+  "outcome_reason": "retrieval-only evaluation",
+  "answered_from_context": false,
+  "status": 200
+}

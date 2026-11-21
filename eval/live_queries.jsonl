@@ -1,0 +1,40 @@
+{"id": "live-01", "query": "What if my CGPA is below two for three semesters?", "topic": "academic standing", "in_scope": true}
+{"id": "live-02", "query": "How does a B minus translate into grade points?", "topic": "grades", "in_scope": true}
+{"id": "live-03", "query": "What is the bachelor degree completion time limit?", "topic": "degree duration", "in_scope": true}
+{"id": "live-04", "query": "Can I get a tuition refund if I leave on day fifteen?", "topic": "refunds", "in_scope": true}
+{"id": "live-05", "query": "Which FAST campus offered civil engineering in the annual report?", "topic": "programmes", "in_scope": true}
+{"id": "live-06", "query": "How long does a full-time faculty member need to work before starting a university technical startup?", "topic": "entrepreneurship", "in_scope": true}
+{"id": "live-07", "query": "Do I need to quote and cite AI-generated material in my assignment?", "topic": "AI policy", "in_scope": true}
+{"id": "live-08", "query": "When is a failed class registered again?", "topic": "course repetition", "in_scope": true}
+{"id": "live-09", "query": "What attendance is mandatory under rule 1.21?", "topic": "attendance", "in_scope": true}
+{"id": "live-10", "query": "What CGPA do I need to avoid an academic warning?", "topic": "academic standing", "in_scope": true}
+{"id": "live-11", "query": "What is the BS per-credit fee for 2026-27?", "topic": "tuition", "in_scope": true}
+{"id": "live-12", "query": "What is the amount of the refundable deposit at admission?", "topic": "admission fees", "in_scope": true}
+{"id": "live-13", "query": "How large is the single admission payment at FAST?", "topic": "admission fees", "in_scope": true}
+{"id": "live-14", "query": "How much do students pay each term to the activities fund?", "topic": "student activities", "in_scope": true}
+{"id": "live-15", "query": "How much will an exam paper recheck cost per course?", "topic": "miscellaneous fees", "in_scope": true}
+{"id": "live-16", "query": "Can I finish my BS after six years and what is a B-minus grade worth?", "topic": "degree duration", "in_scope": true}
+{"id": "live-17", "query": "Will I get my admission fee back and how much tuition is refunded if I leave after 15 days?", "topic": "refunds", "in_scope": true}
+{"id": "live-18", "query": "What happens if I stay on academic warning three semesters and what do I do with a missed subject?", "topic": "academic standing", "in_scope": true}
+{"id": "live-19", "query": "How much would both types of campus transfer cost?", "topic": "miscellaneous fees", "in_scope": true}
+{"id": "live-20", "query": "What's B-minus worth and what CGPA keeps me off warning?", "topic": "grades", "in_scope": true}
+{"id": "live-21", "query": "What does a hostel room cost in Faisalabad each semester?", "topic": "hostel", "in_scope": true}
+{"id": "live-22", "query": "How can I get a room allocated in the hostel?", "topic": "hostel", "in_scope": true}
+{"id": "live-23", "query": "Does the university give incoming students an iPad and which one?", "topic": "unsupported benefits", "in_scope": true}
+{"id": "live-24", "query": "My CGPA was below the 2.00 threshold in three terms. Is my registration closed?", "topic": "academic standing", "in_scope": true}
+{"id": "live-25", "query": "Do new BS students pay an admission fee once?", "topic": "admission fees", "in_scope": true}
+{"id": "live-26", "query": "Is fee paid by all undergraduate batches per credit hour?", "topic": "tuition", "in_scope": true}
+{"id": "live-27", "query": "What does a campus transfer or temporary campus transfer cost?", "topic": "miscellaneous fees", "in_scope": true}
+{"id": "live-28", "query": "What conditions apply to retaking a failed or missed course next semester?", "topic": "course repetition", "in_scope": true}
+{"id": "live-29", "query": "Where do I plug my e-bike in to charge on campus and do I need a special adapter?", "topic": "personal electric transport", "in_scope": false}
+{"id": "live-30", "query": "Can I reserve an electric scooter charging locker for the day?", "topic": "personal electric transport", "in_scope": false}
+{"id": "live-31", "query": "Could I leave my commuter e-bike charging indoors while I attend a lecture?", "topic": "personal electric transport", "in_scope": false}
+{"id": "live-32", "query": "Does the e-scooter charging cabinet take a Type 2 connector?", "topic": "personal electric transport", "in_scope": false}
+{"id": "live-33", "query": "How do I schedule my dog's rabies vaccine at the campus vet clinic?", "topic": "campus pet care", "in_scope": false}
+{"id": "live-34", "query": "Can I board a cat overnight at the campus pet facility?", "topic": "campus pet care", "in_scope": false}
+{"id": "live-35", "query": "When do university veterinary staff provide puppy vaccinations?", "topic": "campus pet care", "in_scope": false}
+{"id": "live-36", "query": "What does overnight pet boarding at the university cost?", "topic": "campus pet care", "in_scope": false}
+{"id": "live-37", "query": "What does a one-on-one gym personal training session cost?", "topic": "fitness coaching", "in_scope": false}
+{"id": "live-38", "query": "How do I book a strength trainer at the campus gym on a Saturday?", "topic": "fitness coaching", "in_scope": false}
+{"id": "live-39", "query": "Can I schedule a personal fitness coach at the university gym?", "topic": "fitness coaching", "in_scope": false}
+{"id": "live-40", "query": "What time are weekend weight-training instructor appointments?", "topic": "fitness coaching", "in_scope": false}

@@ -1,0 +1,12 @@
+**
+!eval
+!eval/Dockerfile
+!eval/ragops_eval.py
+!eval/release_gate.py
+!eval/trace_tools.py
+!eval/coverage_check.py
+!eval/golden.jsonl
+!eval/golden_expanded.jsonl
+!eval/embedding_pairs.jsonl
+!eval/live_queries.jsonl
+!eval/result_io.py

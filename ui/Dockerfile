@@ -15,15 +15,19 @@ FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a
 # image's default site and its start-up scripts (which edit files under /etc/nginx and
 # would fail on a read-only filesystem) are removed.
 #
-# This is already the newest 1.30 build, but its Alpine packages brotli-libs (CRITICAL
-# CVE-2026-111497), curl/libcurl (CVE-2026-92392) and libexpat (CVE-2026-113351,
-# -117610, -118370) have fixed versions in Alpine 3.24, so only those are upgraded here.
+# Upgrade the retained Alpine packages brotli-libs (CVE-2026-111497) and
+# curl/libcurl (CVE-2026-92392) to their patched versions.
 # zlib (HIGH CVE-2026-85091, heap overflow in gz_vacate, fixed in 1.3.2-r1) was added on
 # 2026-11-06, when CI's Trivy scan found it after the CVE was published.
 # musl and musl-utils (HIGH CVE-2026-107891, integer overflow leading to code execution, fixed
 # in 1.2.6-r3) were added on 2026-11-08, after the CD run on main failed its Trivy scan.
+# The base image pins nginx and its optional modules to the same release. Our config
+# loads none of these modules. Removing them drops their libxml2 dependency and lets
+# apk replace the pinned nginx package with the patched Alpine release.
 USER root
-RUN apk upgrade --no-cache brotli-libs curl libcurl libexpat zlib musl musl-utils \
+RUN apk --no-network del nginx-module-geoip nginx-module-image-filter nginx-module-njs nginx-module-xslt \
+ && apk add --no-cache 'nginx>=1.30.7-r0' \
+ && apk upgrade --no-cache brotli-libs curl libcurl zlib musl musl-utils \
  && rm -f /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*.html \
  && rm -rf /docker-entrypoint.d /docker-entrypoint.sh
 COPY nginx.conf /etc/nginx/nginx.conf

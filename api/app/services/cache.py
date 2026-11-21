@@ -63,11 +63,13 @@ def lookup(redis: Any, space: str, question: str, vector: list[float],
 
 
 def store(redis: Any, space: str, question: str, vector: list[float],
-          response: AskResponse, ttl_seconds: int) -> None:
+          response: AskResponse, ttl_seconds: int, *, trace_id: str | None = None) -> None:
     """Save an answer for reuse. The request id is not stored (every request gets its own),
     and the model's reasoning never reaches AskResponse, so it is not stored either."""
     entry = {"question": question, "vector": vector, "key_terms": key_terms(question),
              "response": response.model_dump(exclude={"request_id"})}
+    if trace_id:
+        entry["trace_id"] = trace_id
     normalised = " ".join(question.lower().split())
     key = f"{space}:{hashlib.sha256(normalised.encode()).hexdigest()[:16]}"
     redis.set(key, json.dumps(entry), ex=ttl_seconds)

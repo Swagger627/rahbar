@@ -1,0 +1,13 @@
+job.batch/ragops-coverage-1795238918 created
+kubectl --context rahbar -n rahbar-a3 logs job/ragops-coverage-1795238918
+Coverage 52.5% of 40 queries; cosine >= 0.77; minimum 85%: FAIL
+AI policy: live-07
+academic standing: live-18, live-24
+admission fees: live-13
+campus pet care: live-33, live-34, live-35, live-36
+course repetition: live-28
+degree duration: live-16
+fitness coaching: live-37, live-38, live-39, live-40
+personal electric transport: live-29, live-30, live-31, live-32
+tuition: live-26
+/results/coverage-golden-20261121T052926Z-7e1d7cdb.json

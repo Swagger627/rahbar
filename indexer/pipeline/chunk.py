@@ -32,14 +32,14 @@ def chunk(doc: Document, size: int, overlap: int) -> list[Chunk]:
         raise ValueError(f"need size >= 1 and 0 <= overlap < size, got {size}, {overlap}")
     chunks: list[Chunk] = []
     for section, paragraphs in _sections(doc):
-        for page, words in _pack(paragraphs, size, overlap):
+        for page, words, pages in _pack(paragraphs, size, overlap):
             chunks.append(Chunk(
                 id=f"{Path(doc.source).stem}-{len(chunks):04d}",
                 # The heading is repeated at the top of every chunk, so a chunk still says
                 # what it is about when it is retrieved on its own.
                 text=f"{section}\n{' '.join(words)}",
                 source=doc.source, section=section, page=page,
-                doc_version=doc.doc_version, superseded=doc.superseded,
+                doc_version=doc.doc_version, superseded=doc.superseded, pages=pages,
             ))
     return chunks
 
@@ -110,25 +110,28 @@ def _is_heading(line: str, next_line: str) -> bool:
     return title_case and bool(CLAUSE.match(next_line))   # "Repeating a Course" + "5.8 ..."
 
 
-def _pack(paragraphs: list[tuple[int, str]], size: int, overlap: int) -> list[tuple[int, list[str]]]:
+def _pack(paragraphs: list[tuple[int, str]], size: int, overlap: int) -> list[tuple[int, list[str], tuple[int, ...]]]:
     """Fill chunks paragraph by paragraph up to `size` tokens. A new chunk starts with the
     last `overlap` tokens of the previous one; its page is where its new text starts."""
     pieces = [(page, part) for page, text in paragraphs for part in _split_long(text, size)]
-    chunks: list[tuple[int, list[str]]] = []
+    chunks: list[tuple[int, list[str], tuple[int, ...]]] = []
     words: list[str] = []
+    word_pages: list[int] = []
     page = 0
     for piece_page, piece in pieces:
         piece_words = piece.split()
         if words and len(words) + len(piece_words) > size:
-            chunks.append((page, words))
+            chunks.append((page, words, tuple(sorted(set(word_pages)))))
             keep = min(overlap, size - len(piece_words))   # never let the overlap push past size
             words = words[-keep:] if keep > 0 else []
+            word_pages = word_pages[-keep:] if keep > 0 else []
             page = piece_page
         if not words:
             page = piece_page
         words = words + piece_words
+        word_pages.extend([piece_page] * len(piece_words))
     if words:
-        chunks.append((page, words))
+        chunks.append((page, words, tuple(sorted(set(word_pages)))))
     return chunks
 
 

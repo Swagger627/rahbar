@@ -1,0 +1,2 @@
+job.batch/ragops-eval-baseline-1795239341 created
+kubectl --context rahbar -n rahbar-a3 logs job/ragops-eval-baseline-1795239341

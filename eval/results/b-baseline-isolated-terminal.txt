@@ -1,0 +1,125 @@
+job.batch/ragops-eval-baseline-1795240887 created
+kubectl --context rahbar -n rahbar-a3 logs job/ragops-eval-baseline-1795240887
+run 1 a3-01: starting
+run 1 a3-01: abstained after retry 64.65s 8e8f96dd5e3a402aa947cc54988f4b15
+run 1 a3-02: starting
+run 1 a3-02: answered 16.28s 24b09aed8d2f4c53b440614327ec1d13
+run 1 a3-03: starting
+run 1 a3-03: answered 27.48s 7a9fed7b76624178a43de5b1a0c8d2b4
+run 1 a3-04: starting
+run 1 a3-04: answered 40.60s 3ea191b73a254d04bb65610527420733
+run 1 a3-05: starting
+run 1 a3-05: abstained 23.72s 1626c11e411c4c798c1e3dfcd0e1024c
+run 1 a3-06: starting
+run 1 a3-06: answered 61.49s 2dbb57aa3e3449849ccdfaad264f80cd
+run 1 a3-07: starting
+run 1 a3-07: answered 94.32s 9e044c3fed9642268e138432e4eaffb4
+run 1 a3-08: starting
+run 1 a3-08: answered after retry 93.23s 8283f1f404a84997a1c2c08a3e4f2bfe
+run 1 a3-09: starting
+run 1 a3-09: answered after retry 52.34s 4fadf9bfec294cf4be9ea987dc47baa5
+run 1 a3-10: starting
+run 1 a3-10: answered 34.49s 29fcf9d480814a47a0f0e3ce12067350
+run 1 a3-11: starting
+run 1 a3-11: answered 37.75s 158a651de967423cb13e0b4d34b6bea2
+run 1 a3-12: starting
+run 1 a3-12: answered 27.92s 7731fabf831842a4ba24779b0bfeb67f
+run 1 a3-13: starting
+run 1 a3-13: answered 14.96s 3d7cc1160ebb4781ac2c8993a4cc1276
+run 1 a3-14: starting
+run 1 a3-14: answered 17.73s 4fb2366caa8347e19782600001e7a69d
+run 1 a3-15: starting
+run 1 a3-15: abstained 19.70s 37e984ef71ac4632971977ce47ff0952
+run 1 a3-16: starting
+run 1 a3-16: answered after retry 101.65s d09d3465dd124a4794b6db720de182c8
+run 1 a3-17: starting
+run 1 a3-17: abstained 35.74s f05cf814f67c44cfa526e2821125e049
+run 1 a3-18: starting
+run 1 a3-18: answered 54.86s 717d160a0a194aa2a0f43807f10045fd
+run 1 a3-19: starting
+run 1 a3-19: answered 42.70s fffb66d3b5db486d8de2f2882fd7c022
+run 1 a3-20: starting
+run 1 a3-20: abstained after retry 82.30s b887a5914edc488b9e89bff75fd4303a
+run 1 a3-21: starting
+run 1 a3-21: abstained 36.94s 75a76a7aade5480f8d10785f587ffb83
+run 1 a3-22: starting
+run 1 a3-22: abstained 0.09s 20bcb05105474be3a88f35d879153113
+run 1 a3-23: starting
+run 1 a3-23: abstained 0.06s e05cc949a2e54e6d8c6882c37d58a6de
+run 1 a3-24: starting
+run 1 a3-24: abstained 0.06s 46acced6491245a491c928c7c69771ac
+run 1 a3-25: starting
+run 1 a3-25: abstained 0.06s 528512e8d55e44dcb3669e79f42bd8a5
+run 2 a3-01: starting
+run 2 a3-01: answered after retry 60.94s 768797ef6de9400686f6bfc36b285ba6
+run 2 a3-02: starting
+run 2 a3-02: answered 31.51s bd41382547ca43d690a53595917cab96
+run 2 a3-03: starting
+run 2 a3-03: answered 33.92s 96d7ecea449b40eaa011fbac700f1082
+run 2 a3-04: starting
+run 2 a3-04: answered 39.07s 172176e8bf6345268f2b702044e02f72
+run 2 a3-05: starting
+run 2 a3-05: abstained 19.65s 86d61910e9e341e7b4ace87a3d0e3777
+run 2 a3-06: starting
+run 2 a3-06: answered 21.12s 1cfbdeab5ab747d7a1b0ab0d4102a69e
+run 2 a3-07: starting
+run 2 a3-07: answered 67.35s 2b6c23aa4b4545429fe0328b6c2de47c
+run 2 a3-08: starting
+run 2 a3-08: answered after retry 72.89s 54e6a1d9a094471f96b24bfa40ab458a
+run 2 a3-09: starting
+run 2 a3-09: answered after retry 44.52s 2fe7793ee00c4c54a5f549d7d86887e1
+run 2 a3-10: starting
+run 2 a3-10: answered 48.36s d1cd83199d8e425d87e21c9005016d63
+run 2 a3-11: starting
+run 2 a3-11: answered 36.69s 8d5cecf5cd3649799f86f83ecd2760bd
+run 2 a3-12: starting
+run 2 a3-12: answered 25.53s 48f2f3f6aa5f43f5ae46b99c7b3e2425
+run 2 a3-13: starting
+run 2 a3-13: answered 14.48s 312ee4917a994a9a80c30d53796dacd3
+run 2 a3-14: starting
+run 2 a3-14: answered 17.47s f64f5577e9604e0ba8847d625a94ac2f
+run 2 a3-15: starting
+run 2 a3-15: abstained 18.48s 876b87bb22b64fd69e05ccbc254bbaf0
+run 2 a3-16: starting
+run 2 a3-16: answered after retry 93.19s a72dd2c7c97a47d8a1bb97ed469c1d08
+run 2 a3-17: starting
+run 2 a3-17: abstained 35.33s d7062029b55c4285aa978fca0c2e16af
+run 2 a3-18: starting
+run 2 a3-18: answered 54.87s 3f85411cb2654f29b25e064cbb63adbd
+run 2 a3-19: starting
+run 2 a3-19: answered 42.79s 1458dfeeaaa643e0bc6dc675b8375710
+run 2 a3-20: starting
+run 2 a3-20: abstained after retry 81.58s 9a4bd17d1458498baa3b3ee1f526f43b
+run 2 a3-21: starting
+run 2 a3-21: abstained 8.25s 19beacac35914ef985db4150dd5a9d5b
+run 2 a3-22: starting
+run 2 a3-22: abstained 0.11s 207e2fb84b4b408e810012c7842e7d7f
+run 2 a3-23: starting
+run 2 a3-23: abstained 0.06s 821685b116e14060a6ea2d2b617ebe35
+run 2 a3-24: starting
+run 2 a3-24: abstained 0.06s f1d6714a0df340eb926d0a6dd8883558
+run 2 a3-25: starting
+run 2 a3-25: abstained 0.07s 4ff94df67f314adb9c4f0fae0027435c
+
+Three-level summary (25 queries, 2 run(s), seed 4032)
+Module
+  paraphrase_cosine_mean        0.8434251449184164
+  unrelated_cosine_mean         0.3533139119538855
+  cosine_gap                    0.49011123296453085
+  embedding_ms_per_chunk        155.68074109376084
+  embedding_repeat_max_delta    0.0
+Retrieval
+  recall@3                      0.925
+  recall@5                      0.95
+  mrr                           0.8833333333333334
+  ndcg@5                        0.868268460400594
+End to end
+  faithfulness                  0.5479166666666666
+  abstention_correctness        1.0
+  citation_validity             1.0
+  latency_p50_seconds           34.82942485600006
+  latency_p95_seconds           86.96791661350005
+  answerable_answer_rate        0.775
+Noise delta, run 1: {'recall@3': -0.050000000000000044, 'recall@5': -0.07499999999999996, 'mrr': 0.008333333333333193, 'ndcg@5': -0.01974989380720249}
+Results: /results/evaluation-baseline-20261121T063936Z-239b0164.json
+GATE FAIL: faithfulness 0.5479 requires >= 0.6000; latency_p95_seconds 86.9679 requires <= 45.0000

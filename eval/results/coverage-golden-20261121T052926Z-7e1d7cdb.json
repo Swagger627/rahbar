@@ -1,0 +1,621 @@
+{
+  "golden": "/suite/golden.jsonl",
+  "live": "/suite/live_queries.jsonl",
+  "model": "nomic-embed-text",
+  "similarity": 0.77,
+  "minimum_coverage": 0.85,
+  "coverage": 0.525,
+  "passed": false,
+  "queries": [
+    {
+      "id": "live-01",
+      "query": "What if my CGPA is below two for three semesters?",
+      "topic": "academic standing",
+      "in_scope": true,
+      "nearest": "a3-01",
+      "nearest_question": "What happens if a student's CGPA stays below 2.00 for three consecutive semesters?",
+      "cosine": 0.9290559269550778,
+      "covered": true
+    },
+    {
+      "id": "live-02",
+      "query": "How does a B minus translate into grade points?",
+      "topic": "grades",
+      "in_scope": true,
+      "nearest": "a3-02",
+      "nearest_question": "How many grade points is a B- worth?",
+      "cosine": 0.8231651509766643,
+      "covered": true
+    },
+    {
+      "id": "live-03",
+      "query": "What is the bachelor degree completion time limit?",
+      "topic": "degree duration",
+      "in_scope": true,
+      "nearest": "a3-03",
+      "nearest_question": "What is the maximum time allowed to complete a bachelor's degree?",
+      "cosine": 0.9126466151396636,
+      "covered": true
+    },
+    {
+      "id": "live-04",
+      "query": "Can I get a tuition refund if I leave on day fifteen?",
+      "topic": "refunds",
+      "in_scope": true,
+      "nearest": "a3-04",
+      "nearest_question": "If I withdraw within 15 days of classes starting, what percentage of tuition is refunded?",
+      "cosine": 0.801398346991704,
+      "covered": true
+    },
+    {
+      "id": "live-05",
+      "query": "Which FAST campus offered civil engineering in the annual report?",
+      "topic": "programmes",
+      "in_scope": true,
+      "nearest": "a3-05",
+      "nearest_question": "Which campus offers the BS Civil Engineering program in the 2023-24 annual report?",
+      "cosine": 0.8175189778724609,
+      "covered": true
+    },
+    {
+      "id": "live-06",
+      "query": "How long does a full-time faculty member need to work before starting a university technical startup?",
+      "topic": "entrepreneurship",
+      "in_scope": true,
+      "nearest": "a3-06",
+      "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+      "cosine": 0.9252652701165506,
+      "covered": true
+    },
+    {
+      "id": "live-07",
+      "query": "Do I need to quote and cite AI-generated material in my assignment?",
+      "topic": "AI policy",
+      "in_scope": true,
+      "nearest": "a3-07",
+      "nearest_question": "Under the student Generative AI policy, how should students include AI-generated material in submitted work?",
+      "cosine": 0.7402022522932973,
+      "covered": false
+    },
+    {
+      "id": "live-08",
+      "query": "When is a failed class registered again?",
+      "topic": "course repetition",
+      "in_scope": true,
+      "nearest": "a3-08",
+      "nearest_question": "When do I register again for a course I failed, under clause 5.8?",
+      "cosine": 0.8203247913290922,
+      "covered": true
+    },
+    {
+      "id": "live-09",
+      "query": "What attendance is mandatory under rule 1.21?",
+      "topic": "attendance",
+      "in_scope": true,
+      "nearest": "a3-09",
+      "nearest_question": "What is the attendance requirement under clause 1.21?",
+      "cosine": 0.8926045518649006,
+      "covered": true
+    },
+    {
+      "id": "live-10",
+      "query": "What CGPA do I need to avoid an academic warning?",
+      "topic": "academic standing",
+      "in_scope": true,
+      "nearest": "a3-10",
+      "nearest_question": "What minimum CGPA avoids academic warning under clause 5.4?",
+      "cosine": 0.8562758179399036,
+      "covered": true
+    },
+    {
+      "id": "live-11",
+      "query": "What is the BS per-credit fee for 2026-27?",
+      "topic": "tuition",
+      "in_scope": true,
+      "nearest": "a3-11",
+      "nearest_question": "What is the 2026-27 bachelor's tuition per credit hour in the university fee prospectus?",
+      "cosine": 0.8130294554938807,
+      "covered": true
+    },
+    {
+      "id": "live-12",
+      "query": "What is the amount of the refundable deposit at admission?",
+      "topic": "admission fees",
+      "in_scope": true,
+      "nearest": "a3-12",
+      "nearest_question": "How much is the refundable security deposit payable at admission?",
+      "cosine": 0.8967781805624851,
+      "covered": true
+    },
+    {
+      "id": "live-13",
+      "query": "How large is the single admission payment at FAST?",
+      "topic": "admission fees",
+      "in_scope": true,
+      "nearest": "a3-13",
+      "nearest_question": "How much is the one-time admission fee?",
+      "cosine": 0.7398153895623284,
+      "covered": false
+    },
+    {
+      "id": "live-14",
+      "query": "How much do students pay each term to the activities fund?",
+      "topic": "student activities",
+      "in_scope": true,
+      "nearest": "a3-14",
+      "nearest_question": "How much is the student activities contribution each semester?",
+      "cosine": 0.8062257409837995,
+      "covered": true
+    },
+    {
+      "id": "live-15",
+      "query": "How much will an exam paper recheck cost per course?",
+      "topic": "miscellaneous fees",
+      "in_scope": true,
+      "nearest": "a3-15",
+      "nearest_question": "How much does it cost to request paper rechecking per course or lab?",
+      "cosine": 0.877070705694436,
+      "covered": true
+    },
+    {
+      "id": "live-16",
+      "query": "Can I finish my BS after six years and what is a B-minus grade worth?",
+      "topic": "degree duration",
+      "in_scope": true,
+      "nearest": "a3-16",
+      "nearest_question": "How long do I have to finish my undergraduate program, and how many grade points is a B-minus?",
+      "cosine": 0.765560786488005,
+      "covered": false
+    },
+    {
+      "id": "live-17",
+      "query": "Will I get my admission fee back and how much tuition is refunded if I leave after 15 days?",
+      "topic": "refunds",
+      "in_scope": true,
+      "nearest": "a3-17",
+      "nearest_question": "I was admitted and then decided to leave by the fifteenth teaching day. Is the admission charge refundable, and what share of tuition comes back?",
+      "cosine": 0.8637621027997585,
+      "covered": true
+    },
+    {
+      "id": "live-18",
+      "query": "What happens if I stay on academic warning three semesters and what do I do with a missed subject?",
+      "topic": "academic standing",
+      "in_scope": true,
+      "nearest": "a3-18",
+      "nearest_question": "I have been below a 2.00 CGPA for three straight terms. What happens to my enrolment, and when must I retake a missed course?",
+      "cosine": 0.7150844384479612,
+      "covered": false
+    },
+    {
+      "id": "live-19",
+      "query": "How much would both types of campus transfer cost?",
+      "topic": "miscellaneous fees",
+      "in_scope": true,
+      "nearest": "a3-19",
+      "nearest_question": "What is the combined cost of the ordinary campus-transfer fee and a temporary campus transfer, using the two published charges?",
+      "cosine": 0.8422973414923796,
+      "covered": true
+    },
+    {
+      "id": "live-20",
+      "query": "What's B-minus worth and what CGPA keeps me off warning?",
+      "topic": "grades",
+      "in_scope": true,
+      "nearest": "a3-20",
+      "nearest_question": "If my grade is B-minus, what numeric points is that, and how much CGPA is required to stay out of warning under clause 5.4?",
+      "cosine": 0.8006647399090571,
+      "covered": true
+    },
+    {
+      "id": "live-21",
+      "query": "What does a hostel room cost in Faisalabad each semester?",
+      "topic": "hostel",
+      "in_scope": true,
+      "nearest": "a3-21",
+      "nearest_question": "What is the hostel room fee per semester at the Chiniot-Faisalabad campus?",
+      "cosine": 0.9217826685563896,
+      "covered": true
+    },
+    {
+      "id": "live-22",
+      "query": "How can I get a room allocated in the hostel?",
+      "topic": "hostel",
+      "in_scope": true,
+      "nearest": "a3-22",
+      "nearest_question": "How do I apply for a hostel room, and how are rooms allotted?",
+      "cosine": 0.8985277991451791,
+      "covered": true
+    },
+    {
+      "id": "live-23",
+      "query": "Does the university give incoming students an iPad and which one?",
+      "topic": "unsupported benefits",
+      "in_scope": true,
+      "nearest": "a3-23",
+      "nearest_question": "Which free iPad model is issued to all first-year students?",
+      "cosine": 0.8114480737653897,
+      "covered": true
+    },
+    {
+      "id": "live-24",
+      "query": "My CGPA was below the 2.00 threshold in three terms. Is my registration closed?",
+      "topic": "academic standing",
+      "in_scope": true,
+      "nearest": "a3-01",
+      "nearest_question": "What happens if a student's CGPA stays below 2.00 for three consecutive semesters?",
+      "cosine": 0.7596394321203713,
+      "covered": false
+    },
+    {
+      "id": "live-25",
+      "query": "Do new BS students pay an admission fee once?",
+      "topic": "admission fees",
+      "in_scope": true,
+      "nearest": "a3-13",
+      "nearest_question": "How much is the one-time admission fee?",
+      "cosine": 0.7768084700567701,
+      "covered": true
+    },
+    {
+      "id": "live-26",
+      "query": "Is fee paid by all undergraduate batches per credit hour?",
+      "topic": "tuition",
+      "in_scope": true,
+      "nearest": "a3-11",
+      "nearest_question": "What is the 2026-27 bachelor's tuition per credit hour in the university fee prospectus?",
+      "cosine": 0.7634761188579554,
+      "covered": false
+    },
+    {
+      "id": "live-27",
+      "query": "What does a campus transfer or temporary campus transfer cost?",
+      "topic": "miscellaneous fees",
+      "in_scope": true,
+      "nearest": "a3-19",
+      "nearest_question": "What is the combined cost of the ordinary campus-transfer fee and a temporary campus transfer, using the two published charges?",
+      "cosine": 0.9021395476293552,
+      "covered": true
+    },
+    {
+      "id": "live-28",
+      "query": "What conditions apply to retaking a failed or missed course next semester?",
+      "topic": "course repetition",
+      "in_scope": true,
+      "nearest": "a3-18",
+      "nearest_question": "I have been below a 2.00 CGPA for three straight terms. What happens to my enrolment, and when must I retake a missed course?",
+      "cosine": 0.7629367682920545,
+      "covered": false
+    },
+    {
+      "id": "live-29",
+      "query": "Where do I plug my e-bike in to charge on campus and do I need a special adapter?",
+      "topic": "personal electric transport",
+      "in_scope": false,
+      "nearest": "a3-19",
+      "nearest_question": "What is the combined cost of the ordinary campus-transfer fee and a temporary campus transfer, using the two published charges?",
+      "cosine": 0.530535721596165,
+      "covered": false
+    },
+    {
+      "id": "live-30",
+      "query": "Can I reserve an electric scooter charging locker for the day?",
+      "topic": "personal electric transport",
+      "in_scope": false,
+      "nearest": "a3-22",
+      "nearest_question": "How do I apply for a hostel room, and how are rooms allotted?",
+      "cosine": 0.4604648784096085,
+      "covered": false
+    },
+    {
+      "id": "live-31",
+      "query": "Could I leave my commuter e-bike charging indoors while I attend a lecture?",
+      "topic": "personal electric transport",
+      "in_scope": false,
+      "nearest": "a3-09",
+      "nearest_question": "What is the attendance requirement under clause 1.21?",
+      "cosine": 0.4881679741110852,
+      "covered": false
+    },
+    {
+      "id": "live-32",
+      "query": "Does the e-scooter charging cabinet take a Type 2 connector?",
+      "topic": "personal electric transport",
+      "in_scope": false,
+      "nearest": "a3-23",
+      "nearest_question": "Which free iPad model is issued to all first-year students?",
+      "cosine": 0.4423003950455519,
+      "covered": false
+    },
+    {
+      "id": "live-33",
+      "query": "How do I schedule my dog's rabies vaccine at the campus vet clinic?",
+      "topic": "campus pet care",
+      "in_scope": false,
+      "nearest": "a3-09",
+      "nearest_question": "What is the attendance requirement under clause 1.21?",
+      "cosine": 0.4998752076728906,
+      "covered": false
+    },
+    {
+      "id": "live-34",
+      "query": "Can I board a cat overnight at the campus pet facility?",
+      "topic": "campus pet care",
+      "in_scope": false,
+      "nearest": "a3-21",
+      "nearest_question": "What is the hostel room fee per semester at the Chiniot-Faisalabad campus?",
+      "cosine": 0.5611176730656724,
+      "covered": false
+    },
+    {
+      "id": "live-35",
+      "query": "When do university veterinary staff provide puppy vaccinations?",
+      "topic": "campus pet care",
+      "in_scope": false,
+      "nearest": "a3-06",
+      "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+      "cosine": 0.5509748032907871,
+      "covered": false
+    },
+    {
+      "id": "live-36",
+      "query": "What does overnight pet boarding at the university cost?",
+      "topic": "campus pet care",
+      "in_scope": false,
+      "nearest": "a3-21",
+      "nearest_question": "What is the hostel room fee per semester at the Chiniot-Faisalabad campus?",
+      "cosine": 0.699098428107018,
+      "covered": false
+    },
+    {
+      "id": "live-37",
+      "query": "What does a one-on-one gym personal training session cost?",
+      "topic": "fitness coaching",
+      "in_scope": false,
+      "nearest": "a3-13",
+      "nearest_question": "How much is the one-time admission fee?",
+      "cosine": 0.6305122897980887,
+      "covered": false
+    },
+    {
+      "id": "live-38",
+      "query": "How do I book a strength trainer at the campus gym on a Saturday?",
+      "topic": "fitness coaching",
+      "in_scope": false,
+      "nearest": "a3-22",
+      "nearest_question": "How do I apply for a hostel room, and how are rooms allotted?",
+      "cosine": 0.5281896486983938,
+      "covered": false
+    },
+    {
+      "id": "live-39",
+      "query": "Can I schedule a personal fitness coach at the university gym?",
+      "topic": "fitness coaching",
+      "in_scope": false,
+      "nearest": "a3-06",
+      "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+      "cosine": 0.5377595787821502,
+      "covered": false
+    },
+    {
+      "id": "live-40",
+      "query": "What time are weekend weight-training instructor appointments?",
+      "topic": "fitness coaching",
+      "in_scope": false,
+      "nearest": "a3-06",
+      "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+      "cosine": 0.5219841454966577,
+      "covered": false
+    }
+  ],
+  "uncovered_by_topic": {
+    "AI policy": [
+      {
+        "id": "live-07",
+        "query": "Do I need to quote and cite AI-generated material in my assignment?",
+        "topic": "AI policy",
+        "in_scope": true,
+        "nearest": "a3-07",
+        "nearest_question": "Under the student Generative AI policy, how should students include AI-generated material in submitted work?",
+        "cosine": 0.7402022522932973,
+        "covered": false
+      }
+    ],
+    "admission fees": [
+      {
+        "id": "live-13",
+        "query": "How large is the single admission payment at FAST?",
+        "topic": "admission fees",
+        "in_scope": true,
+        "nearest": "a3-13",
+        "nearest_question": "How much is the one-time admission fee?",
+        "cosine": 0.7398153895623284,
+        "covered": false
+      }
+    ],
+    "degree duration": [
+      {
+        "id": "live-16",
+        "query": "Can I finish my BS after six years and what is a B-minus grade worth?",
+        "topic": "degree duration",
+        "in_scope": true,
+        "nearest": "a3-16",
+        "nearest_question": "How long do I have to finish my undergraduate program, and how many grade points is a B-minus?",
+        "cosine": 0.765560786488005,
+        "covered": false
+      }
+    ],
+    "academic standing": [
+      {
+        "id": "live-18",
+        "query": "What happens if I stay on academic warning three semesters and what do I do with a missed subject?",
+        "topic": "academic standing",
+        "in_scope": true,
+        "nearest": "a3-18",
+        "nearest_question": "I have been below a 2.00 CGPA for three straight terms. What happens to my enrolment, and when must I retake a missed course?",
+        "cosine": 0.7150844384479612,
+        "covered": false
+      },
+      {
+        "id": "live-24",
+        "query": "My CGPA was below the 2.00 threshold in three terms. Is my registration closed?",
+        "topic": "academic standing",
+        "in_scope": true,
+        "nearest": "a3-01",
+        "nearest_question": "What happens if a student's CGPA stays below 2.00 for three consecutive semesters?",
+        "cosine": 0.7596394321203713,
+        "covered": false
+      }
+    ],
+    "tuition": [
+      {
+        "id": "live-26",
+        "query": "Is fee paid by all undergraduate batches per credit hour?",
+        "topic": "tuition",
+        "in_scope": true,
+        "nearest": "a3-11",
+        "nearest_question": "What is the 2026-27 bachelor's tuition per credit hour in the university fee prospectus?",
+        "cosine": 0.7634761188579554,
+        "covered": false
+      }
+    ],
+    "course repetition": [
+      {
+        "id": "live-28",
+        "query": "What conditions apply to retaking a failed or missed course next semester?",
+        "topic": "course repetition",
+        "in_scope": true,
+        "nearest": "a3-18",
+        "nearest_question": "I have been below a 2.00 CGPA for three straight terms. What happens to my enrolment, and when must I retake a missed course?",
+        "cosine": 0.7629367682920545,
+        "covered": false
+      }
+    ],
+    "personal electric transport": [
+      {
+        "id": "live-29",
+        "query": "Where do I plug my e-bike in to charge on campus and do I need a special adapter?",
+        "topic": "personal electric transport",
+        "in_scope": false,
+        "nearest": "a3-19",
+        "nearest_question": "What is the combined cost of the ordinary campus-transfer fee and a temporary campus transfer, using the two published charges?",
+        "cosine": 0.530535721596165,
+        "covered": false
+      },
+      {
+        "id": "live-30",
+        "query": "Can I reserve an electric scooter charging locker for the day?",
+        "topic": "personal electric transport",
+        "in_scope": false,
+        "nearest": "a3-22",
+        "nearest_question": "How do I apply for a hostel room, and how are rooms allotted?",
+        "cosine": 0.4604648784096085,
+        "covered": false
+      },
+      {
+        "id": "live-31",
+        "query": "Could I leave my commuter e-bike charging indoors while I attend a lecture?",
+        "topic": "personal electric transport",
+        "in_scope": false,
+        "nearest": "a3-09",
+        "nearest_question": "What is the attendance requirement under clause 1.21?",
+        "cosine": 0.4881679741110852,
+        "covered": false
+      },
+      {
+        "id": "live-32",
+        "query": "Does the e-scooter charging cabinet take a Type 2 connector?",
+        "topic": "personal electric transport",
+        "in_scope": false,
+        "nearest": "a3-23",
+        "nearest_question": "Which free iPad model is issued to all first-year students?",
+        "cosine": 0.4423003950455519,
+        "covered": false
+      }
+    ],
+    "campus pet care": [
+      {
+        "id": "live-33",
+        "query": "How do I schedule my dog's rabies vaccine at the campus vet clinic?",
+        "topic": "campus pet care",
+        "in_scope": false,
+        "nearest": "a3-09",
+        "nearest_question": "What is the attendance requirement under clause 1.21?",
+        "cosine": 0.4998752076728906,
+        "covered": false
+      },
+      {
+        "id": "live-34",
+        "query": "Can I board a cat overnight at the campus pet facility?",
+        "topic": "campus pet care",
+        "in_scope": false,
+        "nearest": "a3-21",
+        "nearest_question": "What is the hostel room fee per semester at the Chiniot-Faisalabad campus?",
+        "cosine": 0.5611176730656724,
+        "covered": false
+      },
+      {
+        "id": "live-35",
+        "query": "When do university veterinary staff provide puppy vaccinations?",
+        "topic": "campus pet care",
+        "in_scope": false,
+        "nearest": "a3-06",
+        "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+        "cosine": 0.5509748032907871,
+        "covered": false
+      },
+      {
+        "id": "live-36",
+        "query": "What does overnight pet boarding at the university cost?",
+        "topic": "campus pet care",
+        "in_scope": false,
+        "nearest": "a3-21",
+        "nearest_question": "What is the hostel room fee per semester at the Chiniot-Faisalabad campus?",
+        "cosine": 0.699098428107018,
+        "covered": false
+      }
+    ],
+    "fitness coaching": [
+      {
+        "id": "live-37",
+        "query": "What does a one-on-one gym personal training session cost?",
+        "topic": "fitness coaching",
+        "in_scope": false,
+        "nearest": "a3-13",
+        "nearest_question": "How much is the one-time admission fee?",
+        "cosine": 0.6305122897980887,
+        "covered": false
+      },
+      {
+        "id": "live-38",
+        "query": "How do I book a strength trainer at the campus gym on a Saturday?",
+        "topic": "fitness coaching",
+        "in_scope": false,
+        "nearest": "a3-22",
+        "nearest_question": "How do I apply for a hostel room, and how are rooms allotted?",
+        "cosine": 0.5281896486983938,
+        "covered": false
+      },
+      {
+        "id": "live-39",
+        "query": "Can I schedule a personal fitness coach at the university gym?",
+        "topic": "fitness coaching",
+        "in_scope": false,
+        "nearest": "a3-06",
+        "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+        "cosine": 0.5377595787821502,
+        "covered": false
+      },
+      {
+        "id": "live-40",
+        "query": "What time are weekend weight-training instructor appointments?",
+        "topic": "fitness coaching",
+        "in_scope": false,
+        "nearest": "a3-06",
+        "nearest_question": "For how long must a faculty member have worked full-time to qualify to set up a technical start-up?",
+        "cosine": 0.5219841454966577,
+        "covered": false
+      }
+    ]
+  }
+}

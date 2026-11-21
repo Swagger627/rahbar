@@ -240,6 +240,8 @@ the same gate. Details: [docs/CI-CD.md](docs/CI-CD.md).
 
 | Document | What is in it |
 | --- | --- |
+| [docs/PROJECT-EXPLAINED.md](docs/PROJECT-EXPLAINED.md) | complete project walkthrough, 37 source excerpts, concept mapping, examples, and 42 viva questions |
+| [docs/DEMO-RUNBOOK.md](docs/DEMO-RUNBOOK.md) | timed demo, example questions, setup and presentation commands, troubleshooting, and revision notes |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | minikube step by step, with live results |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | components, StatefulSet reasoning, network paths |
 | [docs/PIPELINE.md](docs/PIPELINE.md) | extraction, chunking, retrieval, generation and cache: measurements and choices |
@@ -251,3 +253,159 @@ the same gate. Details: [docs/CI-CD.md](docs/CI-CD.md).
 | [docs/adr/](docs/adr/) | 0001 indexer as a Job · 0002 chunking · 0003 cache in Redis · 0004 LLM provider and data governance |
 | [docs/AI-USAGE.md](docs/AI-USAGE.md) | how AI assistance was used |
 | [docs/evidence/](docs/evidence/) | raw command output, evaluation runs and screenshots |
+
+## Assignment 03 · RAGOps
+
+Assignment 03 adds verification and incremental indexing, trace replay, three-level tests,
+a release gate, and coverage checks. The **Assignment 03 overlay** runs in `rahbar-a3`.
+See [the audit and acceptance plan](docs/ASSIGNMENT-03-PLAN.md) and
+[the fresh-cluster instructions](k8s/README.md).
+
+Run from the repository root with Bash. The examples use minikube context `rahbar`.
+Use `RAGOPS_CONTEXT` to select another profile for the helper script.
+
+### A · Verify and update the corpus
+
+```bash
+bash scripts/ragops-k8s.sh stage a
+bash scripts/ragops-k8s.sh ingest baseline       # initial Batch A
+bash scripts/ragops-k8s.sh ingest baseline       # unchanged, expect 0 chunk embeddings
+```
+
+Record the Part B baseline before staging Batch B. Once the pre/post-drift evals are saved,
+use the following to demonstrate the remaining document update cases.
+
+```bash
+bash scripts/ragops-k8s.sh stage b
+bash scripts/ragops-k8s.sh ingest baseline
+bash scripts/ragops-k8s.sh ingest baseline       # unchanged Batch B
+bash scripts/ragops-k8s.sh ingest baseline --restore fee-info=2026-27
+bash scripts/ragops-k8s.sh ingest baseline --latest fee-info
+bash scripts/ragops-k8s.sh stage edited
+bash scripts/ragops-k8s.sh ingest baseline       # edits only the debate notice
+bash scripts/ragops-k8s.sh stage deleted
+bash scripts/ragops-k8s.sh ingest baseline       # debate notice count falls to zero
+bash scripts/ragops-k8s.sh export
+```
+
+Input paths are relative to the inbox and `_ragops.json` defines its complete desired
+inventory. Omit every row for a document ID to delete its chunks. Supply sortable version
+strings within a document family. The PVC retains verified history for a policy that remains
+in the inventory, so a previous edition can be restored after its raw file leaves the inbox.
+Quarantine, cached extraction and state also live on the corpus PVC. The Job holds a filesystem lock across verification and index updates, including
+manual and scheduled runs. Reports include signature-embedding and chunk-embedding counts
+separately. Batch B additions are synthetic, with explicitly fictional policy content.
+
+### B · Run the three-level suite
+
+```bash
+# Start with Batch A in the baseline collection
+bash scripts/ragops-k8s.sh eval baseline api
+bash scripts/ragops-k8s.sh export
+```
+
+Each Job runs the suite twice with seed 4032. The JSON includes ranked results, answer and
+trace IDs, exact judge context, per-run and repeat deltas, and metrics. The baseline summary
+is written to `eval/results/a3-baseline.json` on export. The lexical typo transformation is
+seeded. Approximate ranking ties, hardware scheduling and model inference can still vary.
+
+The supplied questions are marked synthetic. Before submission replace or add at least
+eight questions personally written by your group and give those rows `origin: human`.
+Record at least eight synthetic reviews with `review_status: reviewed`, a `reviewer` field, and evidence notes. The
+expanded set should include the same reviewed original rows plus the coverage additions.
+For faithfulness, label at least eight actual judged answers in a JSONL file with
+`trace_id`, `supported` (boolean), `reason`, and `reviewer`. To calculate agreement against
+an exported run, pass `--reviews path/to/reviews.jsonl` to `eval/compare_runs.py`.
+
+### C · Compare, gate and release
+
+```bash
+# Keep Batch A staged. This changes only chunk size, from 400 to 380 words.
+bash scripts/ragops-k8s.sh ingest candidate
+bash scripts/ragops-k8s.sh eval candidate api-candidate
+bash scripts/ragops-k8s.sh export
+# Substitute the exported evaluation-candidate-*.json with the passing decision.
+bash scripts/ragops-k8s.sh promote eval/results/evaluation-candidate-RUN_ID.json
+```
+
+The threshold ConfigMap is mounted as a file. The Job saves an evaluation JSON before
+returning exit 1 on a failed gate. Use [the gate and rollback commands](k8s/README.md)
+to demonstrate a rejected candidate, a ConfigMap-only threshold change, and an undo.
+
+### D · Inspect traces
+
+```bash
+kubectl --context rahbar -n rahbar-a3 port-forward svc/api 18000:8000
+```
+
+In another terminal, ask a question and copy the `X-Trace-ID` response header.
+
+```bash
+curl -si http://127.0.0.1:18000/api/ask -H 'Content-Type: application/json' \
+  -d '{"question":"What does clause 1.21 require?"}'
+bash scripts/ragops-k8s.sh export
+python3.12 eval/trace_tools.py trace TRACE_ID
+python3.12 eval/trace_tools.py prompt TRACE_ID
+python3.12 eval/trace_tools.py summary --since 2026-11-21T00:00:00Z --out eval/results/trace-summary.json
+curl -fsS http://127.0.0.1:18000/metrics
+```
+
+After Batch B is indexed in the API's current collection, ask “Where is Azure Lantern badge
+replacement requested?” and inspect the trace for `drop_injected_instruction`. The trace
+schema retains raw query and exact model inputs. Use public or fictional data in demo queries.
+
+### E · Coverage and data drift
+
+```bash
+bash scripts/ragops-k8s.sh coverage golden
+bash scripts/ragops-k8s.sh coverage golden_expanded
+# Compare the same API configuration and golden set with Batch A and then A+B.
+bash scripts/ragops-k8s.sh stage b
+bash scripts/ragops-k8s.sh ingest baseline
+bash scripts/ragops-k8s.sh eval observe api
+bash scripts/ragops-k8s.sh export
+python3.12 eval/compare_runs.py BEFORE.json AFTER.json --out eval/results/data-drift.json
+```
+
+Run the drift evaluation with the live API pointing at `rahbar-a3-baseline`, or update both
+the before and after target to the same deployed profile. Coverage compares the fixed forty
+queries with the golden set using embedding cosine. A failed coverage Job is expected when
+the share falls below the configured target.
+
+### F · Verify Kubernetes
+
+```bash
+bash scripts/ragops-k8s.sh status
+kubectl --context rahbar -n rahbar-a3 apply -f k8s/eval-job.yaml
+kubectl --context rahbar -n rahbar-a3 logs job/ragops-eval -f
+kubectl --context rahbar -n rahbar-a3 top pods --containers
+```
+
+The fixed-name evaluation manifest defaults to the baseline Service. The helper creates a
+uniquely named Job for repeated runs. See [Kubernetes setup and controlled rollout](k8s/README.md)
+for loading images, exporting PVC evidence, and rehearsing the demo.
+
+### G · Render the report and prepare the appendix
+
+Use [the terminal screenshot guide](docs/ASSIGNMENT-03-SCREENSHOTS.md) for the capture order,
+commands, and expected evidence at each placeholder. The report generator reads exported
+runs from `eval/results/` and trace samples from `traces/`.
+
+```bash
+python3.12 -m pip install reportlab
+python3.12 scripts/build_ragops_report.py \
+  --student 'Your name and roll number' \
+  --second 'Second member name and roll number, or approved solo status'
+```
+
+The default PDF includes labeled placeholders. After capturing your own screenshots,
+you can rerender with `--screenshots /path/to/screenshots` using files named by label
+(for example `A1.png` and `F2b.png`), or add your captures in a PDF editor.
+
+Pass `--reviews path/to/reviews.jsonl` when rendering the report to show student and judge
+agreement. Write one JSON object per independently reviewed answer. Use its actual trace ID
+and your verdict and rationale after inspecting the retrieved context.
+
+```json
+{"trace_id": "ACTUAL_TRACE_ID", "reviewer": "YOUR_INITIALS", "supported": true, "reason": "YOUR_RATIONALE"}
+```

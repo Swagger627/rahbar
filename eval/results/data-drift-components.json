@@ -1,0 +1,539 @@
+{
+  "before": "20261121T055131Z-e3e683e6",
+  "after": "20261121T055215Z-4dd46cf2",
+  "before_metrics": {
+    "abstention_correctness": null,
+    "answerable_answer_rate": null,
+    "citation_validity": null,
+    "cosine_gap": 0.49011123296453085,
+    "embedding_ms_per_chunk": 201.62735574999857,
+    "embedding_repeat_max_delta": 0.0,
+    "faithfulness": null,
+    "latency_p50_seconds": null,
+    "latency_p95_seconds": null,
+    "mrr": 0.8833333333333334,
+    "ndcg@5": 0.868268460400594,
+    "paraphrase_cosine_mean": 0.8434251449184164,
+    "pipeline_errors": 0.0,
+    "recall@3": 0.925,
+    "recall@5": 0.95,
+    "unrelated_cosine_mean": 0.3533139119538855
+  },
+  "after_metrics": {
+    "abstention_correctness": null,
+    "answerable_answer_rate": null,
+    "citation_validity": null,
+    "cosine_gap": 0.49011123296453085,
+    "embedding_ms_per_chunk": 167.25052056250433,
+    "embedding_repeat_max_delta": 0.0,
+    "faithfulness": null,
+    "latency_p50_seconds": null,
+    "latency_p95_seconds": null,
+    "mrr": 0.5416666666666667,
+    "ndcg@5": 0.5117219727220211,
+    "paraphrase_cosine_mean": 0.8434251449184164,
+    "pipeline_errors": 0.0,
+    "recall@3": 0.525,
+    "recall@5": 0.55,
+    "unrelated_cosine_mean": 0.3533139119538855
+  },
+  "delta": {
+    "abstention_correctness": null,
+    "answerable_answer_rate": null,
+    "citation_validity": null,
+    "cosine_gap": 0.0,
+    "embedding_ms_per_chunk": -34.37683518749424,
+    "embedding_repeat_max_delta": 0.0,
+    "faithfulness": null,
+    "latency_p50_seconds": null,
+    "latency_p95_seconds": null,
+    "mrr": -0.3416666666666667,
+    "ndcg@5": -0.3565464876785729,
+    "paraphrase_cosine_mean": 0.0,
+    "pipeline_errors": 0.0,
+    "recall@3": -0.4,
+    "recall@5": -0.3999999999999999,
+    "unrelated_cosine_mean": 0.0
+  },
+  "questions": [
+    {
+      "id": "a3-01",
+      "before_trace": "0a12d0a32a1943479e1966549df8e3b0",
+      "after_trace": "9988cb498b324e5abf147fc969d788a7",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-02",
+      "before_trace": "7bc78a9f5fc74a558dd1fee103192dea",
+      "after_trace": "bb70fd1b71f847c1aaa57d0f51749643",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-03",
+      "before_trace": "04f94f9da3bd476faf9ec70db1096814",
+      "after_trace": "5430e8ae18df4657943ff65147d6f41a",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 0.5,
+        "ndcg@5": 0.6309297535714575
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 0.5,
+        "ndcg@5": 0.6309297535714575
+      }
+    },
+    {
+      "id": "a3-04",
+      "before_trace": "e7122599a9c842a290481cf1d25db101",
+      "after_trace": "72fe6487d0d14fa69dd19b8d1fbcf7a2",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg@5": 0.5
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-05",
+      "before_trace": "cb0dae84c1054d40b1a157a03395a18b",
+      "after_trace": "e783f5f96baf4642ab9a4c72042f42e1",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-06",
+      "before_trace": "8d28b531bcf24f169b3be7212bb1f854",
+      "after_trace": "b393dd641b46404da886bc20dd5b3cd5",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-07",
+      "before_trace": "2c97713358ad4e7ba00c771ff86e2896",
+      "after_trace": "0d259cd0ef084aa88fce0ab026750510",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg@5": 0.5
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg@5": 0.5
+      }
+    },
+    {
+      "id": "a3-08",
+      "before_trace": "f48ce01ef7d9461ea1000a57e6f42cf6",
+      "after_trace": "18508514e02f4729969554aaf7839e2e",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-09",
+      "before_trace": "92d1ec1969604c30974c9b670d8be743",
+      "after_trace": "cdedc170f8df46dea0e80dfaec88af1a",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-10",
+      "before_trace": "453cfa384321494489829233c08708e9",
+      "after_trace": "4e4c2683d41a4d6c8e5c63aaee957895",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      }
+    },
+    {
+      "id": "a3-11",
+      "before_trace": "5219f489ebec4ab1b8287d85c76a805d",
+      "after_trace": "e9ba33b72b9a490984297b5399b632e9",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-12",
+      "before_trace": "6b43d48be5d1495da169cf8ddf9fe1e2",
+      "after_trace": "730c3b688a1c415faf95554087dfe328",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-13",
+      "before_trace": "63a49a6a379d4a5dafda25516d7d2e29",
+      "after_trace": "f7a9eba35ba94d9f9bd58f1065465677",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-14",
+      "before_trace": "b59d53c8162e4cc88171c886c811a456",
+      "after_trace": "da429639ad174e5096d38469e9715b0f",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-15",
+      "before_trace": "26393289cc00498ab47a87e7f6dbe225",
+      "after_trace": "bb9bd92ef457421db1b958b671b4adf1",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 0.5,
+        "ndcg@5": 0.6309297535714575
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-16",
+      "before_trace": "c7d67e80d5814a54a52d648d407df5d3",
+      "after_trace": "09f14b1835c24082829fc36f2eb89bc1",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 0.5,
+        "recall@5": 0.5,
+        "mrr": 1.0,
+        "ndcg@5": 0.6131471927654584
+      },
+      "after_retrieval": {
+        "recall@3": 0.5,
+        "recall@5": 0.5,
+        "mrr": 1.0,
+        "ndcg@5": 0.6131471927654584
+      }
+    },
+    {
+      "id": "a3-17",
+      "before_trace": "13f027b34b024b718c4be5031160c2e3",
+      "after_trace": "cb1f7fb9784c4b5faca7bcbae2127564",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-18",
+      "before_trace": "26cf1917a4c347e69b4cc2c2c65246e2",
+      "after_trace": "9ce2a5770d52492f889c1a3cde666668",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 0.5,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 0.8772153153380493
+      },
+      "after_retrieval": {
+        "recall@3": 0.5,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 0.8772153153380493
+      }
+    },
+    {
+      "id": "a3-19",
+      "before_trace": "9bba2cca9068462a98a7ae67f4bab78d",
+      "after_trace": "456b1e2e80f747dabc4db7266cfe98db",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 1.0,
+        "recall@5": 1.0,
+        "mrr": 1.0,
+        "ndcg@5": 1.0
+      },
+      "after_retrieval": {
+        "recall@3": 0.0,
+        "recall@5": 0.0,
+        "mrr": 0.0,
+        "ndcg@5": 0.0
+      }
+    },
+    {
+      "id": "a3-20",
+      "before_trace": "7b71fb72b56e40388ffa4d2989be4125",
+      "after_trace": "6c2622bfef2c49fdbccc4cec1a4003ae",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": {
+        "recall@3": 0.5,
+        "recall@5": 0.5,
+        "mrr": 1.0,
+        "ndcg@5": 0.6131471927654584
+      },
+      "after_retrieval": {
+        "recall@3": 0.5,
+        "recall@5": 0.5,
+        "mrr": 1.0,
+        "ndcg@5": 0.6131471927654584
+      }
+    },
+    {
+      "id": "a3-21",
+      "before_trace": "3ee5b641981245fb8ab652e611f154a5",
+      "after_trace": "d2ca41a9429e4f7590d6ff356c4587bb",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": null,
+      "after_retrieval": null
+    },
+    {
+      "id": "a3-22",
+      "before_trace": "371080597a7840bea84aa5c06fb99717",
+      "after_trace": "1f9bec15fec643fa826242fb0f7b4d6c",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": null,
+      "after_retrieval": null
+    },
+    {
+      "id": "a3-23",
+      "before_trace": "84b132fc9cf34681a2d2d68b5821be54",
+      "after_trace": "e0e0e0caa2af46bd9119b69b26032f97",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": null,
+      "after_retrieval": null
+    },
+    {
+      "id": "a3-24",
+      "before_trace": "49d22e209f8e4db181622417159ea746",
+      "after_trace": "531cd2547e9f4dbb96b12073663af149",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": null,
+      "after_retrieval": null
+    },
+    {
+      "id": "a3-25",
+      "before_trace": "8d2c15b4c7ae4cf99e8a19033914bb58",
+      "after_trace": "ab44896c43114f12a31d170aaa84ed80",
+      "before_outcome": "retrieval_only",
+      "after_outcome": "retrieval_only",
+      "before_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "after_answer": "The documents I have do not cover this question, so I cannot answer it. Please check with the university office.",
+      "before_retrieval": null,
+      "after_retrieval": null
+    }
+  ],
+  "human_judge_agreement_after": {
+    "human_reviewed": 0,
+    "agreement": null
+  }
+}

@@ -59,6 +59,10 @@ class Settings:
     cache_ttl_seconds: int = 3600     # CACHE_TTL_SECONDS: a stored answer lives one hour
 
     log_level: str = "INFO"
+    trace_dir: str = ""
+    seed: int | None = None
+    active_only: bool = False
+    evaluation_mode: bool = False
 
 
 def get_settings() -> Settings:
@@ -80,4 +84,8 @@ def get_settings() -> Settings:
         cache_threshold=_float("CACHE_THRESHOLD", 0.90),
         cache_ttl_seconds=_int("CACHE_TTL_SECONDS", 3600),
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
+        trace_dir=os.environ.get("TRACE_DIR", ""),
+        seed=int(os.environ["LLM_SEED"]) if "LLM_SEED" in os.environ else None,
+        active_only=os.environ.get("ACTIVE_ONLY", "false").lower() == "true",
+        evaluation_mode=os.environ.get("EVALUATION_MODE", "false").lower() == "true",
     )

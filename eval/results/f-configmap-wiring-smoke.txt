@@ -1,0 +1,13 @@
+configmap/ragops-gate-smoke created
+job.batch/ragops-smoke-pass-1795241099 created
+SYNTHETIC SMOKE FIXTURE (ConfigMap wiring only)
+GATE PASS
+sha256:81118cb172feb38a3e6636404c00adbf08eeb2c8be9782a3f6d90248c106fd59  exit=0
+SuccessCriteriaMet Complete
+configmap/ragops-gate-smoke configured
+job.batch/ragops-smoke-fail-1795241099 created
+SYNTHETIC SMOKE FIXTURE (ConfigMap wiring only)
+GATE FAIL
+latency_p95_seconds 1.0000 requires <= 0.0010
+sha256:81118cb172feb38a3e6636404c00adbf08eeb2c8be9782a3f6d90248c106fd59  exit=1
+FailureTarget Failed

@@ -1,0 +1,8 @@
+job.batch/ragops-coverage-1795239080 created
+kubectl --context rahbar -n rahbar-a3 logs job/ragops-coverage-1795239080
+Coverage 87.5% of 40 queries; cosine >= 0.77; minimum 85%: PASS
+academic standing: live-18, live-24
+admission fees: live-13
+course repetition: live-28
+tuition: live-26
+/results/coverage-golden_expanded-20261121T053133Z-0b86a871.json

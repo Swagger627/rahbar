@@ -1,0 +1,10 @@
+$ kubectl --context rahbar -n rahbar-a3 top pods --containers
+POD                                NAME      CPU(cores)   MEMORY(bytes)   
+api-54994d9cfb-9l2tc               api       4m           73Mi            
+api-77888d7b46-9bmbb               api       4m           71Mi            
+api-candidate-c48478d89-2x5dt      api       4m           80Mi            
+api-candidate-f9d74fccc-mbdgn      api       4m           75Mi            
+chroma-0                           chroma    2m           25Mi            
+ingest-baseline-1795238719-pp5dq   indexer   998m         1053Mi          
+ragops-artifacts                   files     0m           4Mi             
+redis-7f8448bb6b-hq8dc             redis     20m          8Mi             

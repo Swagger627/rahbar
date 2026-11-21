@@ -1,0 +1,89 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rahbar-a3
+resources:
+  - ../base
+  - resources.yaml
+  - candidate.yaml
+  - eval-network.yaml
+images:
+  - name: rahbar-api
+    newTag: a3
+  - name: rahbar-indexer
+    newTag: a3
+patches:
+  - target:
+      kind: Namespace
+      name: rahbar
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: rahbar-a3
+  - target:
+      kind: Deployment
+      name: api
+    path: api-patch.yaml
+  - target:
+      kind: Service
+      name: api
+    patch: |-
+      - op: add
+        path: /spec/selector/track
+        value: live
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: api
+    patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: api
+  - target:
+      kind: Deployment
+      name: ui
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ui
+  - target:
+      kind: Service
+      name: ui
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: ui
+  - target:
+      kind: Ingress
+      name: rahbar
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: rahbar
+  - target:
+      kind: ConfigMap
+      name: rahbar-config
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: rahbar-config
+      data:
+        CORPUS_DIR: /corpus/inbox
+        RAGOPS_DIR: /corpus/lake
+        RESULTS_DIR: /results
+        TRACE_DIR: /traces
+        ACTIVE_ONLY: "true"
+        EVALUATION_MODE: "true"
+        LLM_SEED: "4032"
+        CHROMA_COLLECTION: rahbar-a3-baseline
+  - target:
+      kind: CronJob
+      name: reindex
+    path: cron-patch.yaml
