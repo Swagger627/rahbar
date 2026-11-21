@@ -1,0 +1,35 @@
+{
+  "since": null,
+  "until": null,
+  "queries": 367,
+  "answered_or_abstained": 54,
+  "top1_distribution": {
+    "<0.50": 2,
+    "0.50-0.64": 6,
+    "0.65-0.79": 30,
+    ">=0.80": 16
+  },
+  "top1_p50": 0.74271599,
+  "cache_counts": {
+    "off": 54
+  },
+  "cache_hit_rate": null,
+  "abstention_rate": 0.42592592592592593,
+  "outcomes": {
+    "abstained": 17,
+    "fallback": 3,
+    "abstained after retry": 3,
+    "answered": 24,
+    "answered after retry": 7
+  },
+  "p95_ms_by_stage": {
+    "citation_validation": 0.16395,
+    "generation": 116407.01919999995,
+    "guardrails": 3.07295,
+    "query_embedding": 144.40939999999992,
+    "retrieval": 164.64289999999997,
+    "total": 108134.3820999999
+  },
+  "queries_with_injection_flagged": 1,
+  "injected_chunks_dropped": 1
+}
