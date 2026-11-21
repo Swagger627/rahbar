@@ -1,0 +1,118 @@
+job.batch/ragops-components-1795240310 created
+kubectl --context rahbar -n rahbar-a3 logs job/ragops-components-1795240310
+run 1 a3-01: starting
+run 1 a3-01: retrieval_only 0.19s 9988cb498b324e5abf147fc969d788a7
+run 1 a3-02: starting
+run 1 a3-02: retrieval_only 0.08s bb70fd1b71f847c1aaa57d0f51749643
+run 1 a3-03: starting
+run 1 a3-03: retrieval_only 0.08s 5430e8ae18df4657943ff65147d6f41a
+run 1 a3-04: starting
+run 1 a3-04: retrieval_only 0.09s 72fe6487d0d14fa69dd19b8d1fbcf7a2
+run 1 a3-05: starting
+run 1 a3-05: retrieval_only 0.08s e783f5f96baf4642ab9a4c72042f42e1
+run 1 a3-06: starting
+run 1 a3-06: retrieval_only 0.13s b393dd641b46404da886bc20dd5b3cd5
+run 1 a3-07: starting
+run 1 a3-07: retrieval_only 0.09s 0d259cd0ef084aa88fce0ab026750510
+run 1 a3-08: starting
+run 1 a3-08: retrieval_only 0.11s 18508514e02f4729969554aaf7839e2e
+run 1 a3-09: starting
+run 1 a3-09: retrieval_only 0.08s cdedc170f8df46dea0e80dfaec88af1a
+run 1 a3-10: starting
+run 1 a3-10: retrieval_only 0.13s 4e4c2683d41a4d6c8e5c63aaee957895
+run 1 a3-11: starting
+run 1 a3-11: retrieval_only 0.18s e9ba33b72b9a490984297b5399b632e9
+run 1 a3-12: starting
+run 1 a3-12: retrieval_only 0.08s 730c3b688a1c415faf95554087dfe328
+run 1 a3-13: starting
+run 1 a3-13: retrieval_only 0.25s f7a9eba35ba94d9f9bd58f1065465677
+run 1 a3-14: starting
+run 1 a3-14: retrieval_only 0.51s da429639ad174e5096d38469e9715b0f
+run 1 a3-15: starting
+run 1 a3-15: retrieval_only 0.44s bb9bd92ef457421db1b958b671b4adf1
+run 1 a3-16: starting
+run 1 a3-16: retrieval_only 0.10s 09f14b1835c24082829fc36f2eb89bc1
+run 1 a3-17: starting
+run 1 a3-17: retrieval_only 0.10s cb1f7fb9784c4b5faca7bcbae2127564
+run 1 a3-18: starting
+run 1 a3-18: retrieval_only 0.18s 9ce2a5770d52492f889c1a3cde666668
+run 1 a3-19: starting
+run 1 a3-19: retrieval_only 0.13s 456b1e2e80f747dabc4db7266cfe98db
+run 1 a3-20: starting
+run 1 a3-20: retrieval_only 0.16s 6c2622bfef2c49fdbccc4cec1a4003ae
+run 1 a3-21: starting
+run 1 a3-21: retrieval_only 0.11s d2ca41a9429e4f7590d6ff356c4587bb
+run 1 a3-22: starting
+run 1 a3-22: retrieval_only 0.08s 1f9bec15fec643fa826242fb0f7b4d6c
+run 1 a3-23: starting
+run 1 a3-23: retrieval_only 0.09s e0e0e0caa2af46bd9119b69b26032f97
+run 1 a3-24: starting
+run 1 a3-24: retrieval_only 0.11s 531cd2547e9f4dbb96b12073663af149
+run 1 a3-25: starting
+run 1 a3-25: retrieval_only 0.07s ab44896c43114f12a31d170aaa84ed80
+run 2 a3-01: starting
+run 2 a3-01: retrieval_only 0.08s 601a0ae758b0461c953ace9385699c94
+run 2 a3-02: starting
+run 2 a3-02: retrieval_only 0.10s cfaf18f889bd459b855adb0d79a5cd45
+run 2 a3-03: starting
+run 2 a3-03: retrieval_only 0.07s 586e1d96ee454665b0368789fcf53cb1
+run 2 a3-04: starting
+run 2 a3-04: retrieval_only 0.08s 28db875927da40909b9751e8ad442b34
+run 2 a3-05: starting
+run 2 a3-05: retrieval_only 0.10s bf0413e0cab14d7cb4617bdb2e8bb915
+run 2 a3-06: starting
+run 2 a3-06: retrieval_only 0.11s a3cc661321744974bd078962337844ca
+run 2 a3-07: starting
+run 2 a3-07: retrieval_only 0.10s 25c3c07091674067a6c4d3a479ca67bb
+run 2 a3-08: starting
+run 2 a3-08: retrieval_only 0.30s 25b84d80abe44f14b96666e266b472ab
+run 2 a3-09: starting
+run 2 a3-09: retrieval_only 0.10s 0c6398561ed443b9823ec9bbc2b6bcaa
+run 2 a3-10: starting
+run 2 a3-10: retrieval_only 0.10s 92ee59b5cf86403b936e37ed1ee55771
+run 2 a3-11: starting
+run 2 a3-11: retrieval_only 0.10s eddc2b62ef5c462e9fbad29eed0e074f
+run 2 a3-12: starting
+run 2 a3-12: retrieval_only 0.07s 41c3ffee286f48dd802ce29b83a6b6ca
+run 2 a3-13: starting
+run 2 a3-13: retrieval_only 0.08s 80e341df422445d38135ce459339b65d
+run 2 a3-14: starting
+run 2 a3-14: retrieval_only 0.12s 4d367e7bdd214539a4523e4783cce84d
+run 2 a3-15: starting
+run 2 a3-15: retrieval_only 0.09s f7f8e615d2114e91a0539bf10956c2e5
+run 2 a3-16: starting
+run 2 a3-16: retrieval_only 0.10s 0309533ac44e430092f74ae7c591ac43
+run 2 a3-17: starting
+run 2 a3-17: retrieval_only 0.12s 6555099627084bcd989b7511ca03a7e9
+run 2 a3-18: starting
+run 2 a3-18: retrieval_only 0.10s 14a8eab9a90a463cbcd5d42558ffc8e1
+run 2 a3-19: starting
+run 2 a3-19: retrieval_only 0.18s 619243ccf45c45cab1738f51a9b0b982
+run 2 a3-20: starting
+run 2 a3-20: retrieval_only 0.13s 81fbde289df349cbb9b4c24f28f039c8
+run 2 a3-21: starting
+run 2 a3-21: retrieval_only 0.07s 164c35fe8e1742cfb3f70f275e2fa77b
+run 2 a3-22: starting
+run 2 a3-22: retrieval_only 0.13s c2418dd5a359465e9bf87fa3bc39254d
+run 2 a3-23: starting
+run 2 a3-23: retrieval_only 0.07s 4862ab4ddd054a3a9bc4ee38f228110d
+run 2 a3-24: starting
+run 2 a3-24: retrieval_only 0.14s b31a13d20677460cb5fbfe9d0c0020c0
+run 2 a3-25: starting
+run 2 a3-25: retrieval_only 0.13s b93122a0b7104837bb5a499b57c44a96
+
+Two-level summary (25 queries, 2 run(s), seed 4032)
+Module
+  paraphrase_cosine_mean        0.8434251449184164
+  unrelated_cosine_mean         0.3533139119538855
+  cosine_gap                    0.49011123296453085
+  embedding_ms_per_chunk        167.25052056250433
+  embedding_repeat_max_delta    0.0
+Retrieval
+  recall@3                      0.525
+  recall@5                      0.55
+  mrr                           0.5416666666666667
+  ndcg@5                        0.5117219727220211
+Noise delta, run 1: {'recall@3': -0.050000000000000044, 'recall@5': -0.07500000000000007, 'mrr': -0.01666666666666672, 'ndcg@5': -0.03820340612862949}
+Results: /results/components-observe-20261121T055215Z-4dd46cf2.json
+Component observations saved
