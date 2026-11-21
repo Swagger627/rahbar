@@ -5,10 +5,8 @@ AI was used to build RAHBAR. It is kept up to date as the project grows.
 
 ## Summary
 
-Almost all code, tests, Kubernetes manifests and documentation in this repository so far were
-written by an AI coding assistant, working step by step under the direction of the team member
-who built it (Faseeh, GitHub `Swagger627`). The second team member, `MugheesHiader476`, has not
-contributed yet.
+For Assignment 02, an AI coding assistant wrote most of the code, tests, Kubernetes manifests
+and documentation under the direction of Faseeh (GitHub `Swagger627`).
 
 The work was done in small, numbered steps (0.x environment and repository, 1.x corpus and
 golden set, 2.x Docker and Kubernetes, 3.x the RAG pipeline). For each step the team member:
@@ -21,6 +19,12 @@ golden set, 2.x Docker and Kubernetes, 3.x the RAG pipeline). For each step the 
 
 Commits carry only the team member's name. AI co-author lines were turned off on purpose, and
 this file is the disclosure instead.
+
+## Assignment 03
+
+Codex helped implement and test the RAGOps pipeline, prepare the report and screenshot guide,
+and organize the working-tree changes into commits. The evaluation evidence was exported from
+runs of the project pipeline. The report records which runs were completed.
 
 ## Tools
 
