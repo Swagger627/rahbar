@@ -19,6 +19,7 @@ import logging
 
 import httpx
 
+from ... import trace
 from ...config import Settings
 from ...schemas import Answer, Passage
 from .ollama import build_messages, count_tokens, parse_answer, retry_message
@@ -54,6 +55,8 @@ class HostedProvider:
         messages[0] = {"role": "system", "content": messages[0]["content"] + SCHEMA_NOTE}
         if problem:
             messages.append(retry_message(problem, passages))
+        trace.prompt(messages, {"model": self.settings.llm_model,
+                                "temperature": self.settings.temperature, "format": "json_object"})
         url = self.settings.hosted_base_url.rstrip("/") + "/chat/completions"
         try:
             response = httpx.post(

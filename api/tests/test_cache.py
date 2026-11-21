@@ -13,6 +13,7 @@ from typing import Any
 import httpx
 import pytest
 
+from app import trace
 from app.config import get_settings
 from app.logjson import request_id_var
 from app.retrieval import chroma as chroma_module
@@ -232,9 +233,12 @@ def test_reasoning_and_request_id_are_not_stored(monkeypatch: pytest.MonkeyPatch
 
 
 def test_redis_down_runs_the_normal_pipeline(monkeypatch: pytest.MonkeyPatch) -> None:
+    measured: list[str] = []
+    monkeypatch.setattr(trace, "stage", lambda name, _: measured.append(name))
     provider = CountingProvider()
     response, result = ask(Q, setup(monkeypatch, {Q: SAME}), provider, BrokenRedis())
     assert result == "error" and provider.calls == 1 and response.answered_from_context
+    assert measured.index("cache_lookup") < measured.index("generation")
 
 
 def test_no_redis_or_the_stub_retriever_means_cache_off(monkeypatch: pytest.MonkeyPatch) -> None:
