@@ -8,11 +8,13 @@ Chroma: the indexer Job is the only writer.
 from __future__ import annotations
 
 import math
+import time
 import re
 from typing import Any
 
 import httpx
 
+from .. import trace
 from ..config import Settings
 from ..schemas import Passage
 
@@ -68,7 +70,10 @@ class ChromaRetriever:
         similarity, so the list is in that order: exact clause matches, then by score."""
         collection, dimension = self._open_collection()
         vector = self._embed_question(question, dimension)
-        history = self._asks_about_history(question, collection)
+        history = not self.settings.active_only and self._asks_about_history(question, collection)
+        trace.record(filters=[{"superseded": False} if not history else {"superseded": "both"}],
+                     ranking_method="exact clause promotion then similarity",
+                     requested_clause_refs=clause_refs(question))
         exact = self._exact_clause_matches(collection, vector, question, history)
         if not history:
             ranked = self._search(collection, vector, k, superseded=False)
@@ -90,7 +95,9 @@ class ChromaRetriever:
         for the semantic cache. A re-index makes a new collection, so a new id. The
         embedding pin is checked here too."""
         collection, dimension = self._open_collection()
-        return self._embed_question(question, dimension), str(collection.id)
+        return self._embed_question(question, dimension), (
+            f"{collection.id}:{(collection.metadata or {}).get('revision', '')}"
+        )
 
     def check_index(self) -> dict[str, object]:
         """The readiness checks: Chroma answers, the collection exists and is not empty,
@@ -111,8 +118,17 @@ class ChromaRetriever:
             found = len(sample[0]) if sample is not None and len(sample) else "no"
             raise RuntimeError(f"collection says dimension {dimension}, but a stored "
                                f"vector has {found} values")
-        return {"collection": self.settings.collection, "rows": rows,
-                "embed_model": self.settings.embed_model, "dimension": dimension}
+        info: dict[str, object] = {
+            "collection": self.settings.collection, "rows": rows,
+            "embed_model": self.settings.embed_model, "dimension": dimension,
+        }
+        metadata = collection.metadata or {}
+        if "revision" in metadata:
+            info.update(collection_version=metadata["revision"],
+                        embedding_version=metadata.get("embed_version"),
+                        index_profile=metadata.get("profile"),
+                        top_k=self.settings.top_k)
+        return info
 
     def _get_client(self) -> Any:
         """chromadb.HttpClient contacts the server as soon as it is created, so it is made
@@ -139,6 +155,11 @@ class ChromaRetriever:
             raise RuntimeError(f"collection {name!r} not found or chroma unreachable: "
                                f"{type(exc).__name__}") from exc
         metadata = collection.metadata or {}
+        trace.record(collection_version=metadata.get("revision", str(getattr(collection, "id", "legacy"))),
+                     embedding_version=metadata.get("embed_version", self.settings.embed_model),
+                     index_profile=metadata.get("profile"), top_k=self.settings.top_k)
+        if metadata.get("updating"):
+            raise RuntimeError(f"collection {name!r} is being updated")
         model, dimension = metadata.get("embed_model"), metadata.get("dimension")
         if model != self.settings.embed_model:
             raise RuntimeError(f"embedding model mismatch: the index was built with {model!r} "
@@ -150,6 +171,7 @@ class ChromaRetriever:
     def _embed_question(self, question: str, dimension: int) -> list[float]:
         """POST {ollama_url}/api/embed with the pinned model, exactly as the indexer does.
         Never falls back to a fake vector."""
+        started = time.perf_counter()
         url = self.settings.ollama_url.rstrip("/") + "/api/embed"
         try:
             response = httpx.post(url, json={"model": self.settings.embed_model,
@@ -172,6 +194,7 @@ class ChromaRetriever:
         if len(vector) != dimension:
             raise RuntimeError(f"question vector has {len(vector)} values but the index "
                                f"has {dimension}: not the model that built the index")
+        trace.stage("query_embedding", started)
         return vector
 
     def _asks_about_history(self, question: str, collection: Any) -> bool:
@@ -223,6 +246,8 @@ class ChromaRetriever:
             passages.append(Passage(
                 chunk_id=chunk_id, text=text, source=str(meta.get("source", "")),
                 section=str(meta.get("section", "")), page=meta.get("page"),
+                pages=[int(p) for p in str(meta.get("pages", "")).split(",") if p],
+                document_id=meta.get("document_id"), doc_version=meta.get("doc_version"),
                 score=1 - distance,   # Chroma gives cosine distance; similarity = 1 - distance
             ))
         return passages   # Chroma already returns them closest first

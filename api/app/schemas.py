@@ -25,6 +25,9 @@ class Passage(BaseModel):
     source: str
     section: str
     page: int | None = None
+    pages: list[int] = Field(default_factory=list)
+    document_id: str | None = None
+    doc_version: str | None = None
     score: float = Field(description="Similarity, higher is closer (1 - cosine distance).")
 
 
@@ -51,6 +54,9 @@ class RetrievedRef(BaseModel):
     source: str
     section: str
     page: int | None = None
+    pages: list[int] = Field(default_factory=list)
+    document_id: str | None = None
+    doc_version: str | None = None
     score: float
 
 
