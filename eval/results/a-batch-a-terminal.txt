@@ -1,0 +1,4 @@
+job.batch/ingest-baseline-1795238719 created
+kubectl --context rahbar -n rahbar-a3 logs job/ingest-baseline-1795238719
+{"ts": "2026-11-21T05:25:23Z", "logger": "rahbar.indexer", "msg": "indexer starting", "dummy": false, "embed_model": "nomic-embed-text", "collection": "rahbar-a3-baseline", "chroma": "chroma:8000", "pod": "ingest-baseline-1795238719-pp5dq"}
+{"ts": "2026-11-21T05:29:30Z", "logger": "rahbar.indexer", "msg": "indexer failed", "error": "embedding chunks 0-0 with 'nomic-embed-text' at http://192.168.49.3:11434/api/embed failed: HTTP 400 {\"error\":\"the input length exceeds the context length\"}"}

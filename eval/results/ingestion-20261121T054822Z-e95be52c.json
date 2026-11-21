@@ -1,0 +1,562 @@
+{
+  "run_id": "20261121T054822Z-e95be52c",
+  "verification_embeddings": 6,
+  "index_update": {
+    "collection": "rahbar-a3-baseline",
+    "revision": "a1c25e64d7534f17",
+    "profile": "nomic-embed-text@0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f/400/50/pages-v1",
+    "chunks_embedded": 5,
+    "chunks_deleted": 0,
+    "chunk_status_updates": 8,
+    "chunks_total": 436,
+    "counts_by_document_id": {
+      "academic-rules": {
+        "active": 73,
+        "archived": 38
+      },
+      "annual-report": {
+        "active": 174,
+        "archived": 0
+      },
+      "b00-volunteering": {
+        "active": 1,
+        "archived": 0
+      },
+      "b07-guardrail": {
+        "active": 1,
+        "archived": 0
+      },
+      "b08-robotics": {
+        "active": 1,
+        "archived": 0
+      },
+      "b09-debate": {
+        "active": 1,
+        "archived": 0
+      },
+      "fee-info": {
+        "active": 1,
+        "archived": 8
+      },
+      "prospectus-rules": {
+        "active": 36,
+        "archived": 0
+      },
+      "startup-policy": {
+        "active": 13,
+        "archived": 0
+      },
+      "student-handbook": {
+        "active": 89,
+        "archived": 0
+      }
+    },
+    "counts_before": {
+      "academic-rules": 111,
+      "annual-report": 174,
+      "fee-info": 8,
+      "prospectus-rules": 36,
+      "startup-policy": 13,
+      "student-handbook": 89
+    }
+  },
+  "documents": [
+    {
+      "file": "undergraduate-academic-rules-aug-2023.pdf",
+      "document_id": "academic-rules",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "26528 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 26/26; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "newer verified version 2026-06; historical version 2023-08"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: none (-1.0000); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "cddfe1f5e9770132e27d686abd1c2e6742ef4732f0c2f431ed514bc1691d2004",
+      "title": "Undergraduate Academic Rules (Aug 2023)",
+      "source": "http://nu.edu.pk/public/downloads/Academic-Rules-Undergrad-Aug-2023.pdf",
+      "doc_version": "2023-08",
+      "page_count": 26,
+      "superseded": true,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/academic-rules/cddfe1f5e9770132e27d686abd1c2e6742ef4732f0c2f431ed514bc1691d2004/undergraduate-academic-rules-aug-2023.pdf",
+      "disposition": "archive"
+    },
+    {
+      "file": "academic-rules-handbook-jun-2026.pdf",
+      "document_id": "academic-rules",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "50973 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 58/58; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-06"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: none (-1.0000); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "4cfee3e191b84aeb9168f17656c7642212ff52b90f2780d028b33c154aa74b62",
+      "title": "Academic Rules Handbook (Jun 2026)",
+      "source": "https://nu.edu.pk/public/downloads/Academic_Rules_Handbook_2026.pdf",
+      "doc_version": "2026-06",
+      "page_count": 58,
+      "superseded": false,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/academic-rules/4cfee3e191b84aeb9168f17656c7642212ff52b90f2780d028b33c154aa74b62/academic-rules-handbook-jun-2026.pdf",
+      "disposition": "active"
+    },
+    {
+      "file": "prospectus-2026-academic-rules-and-regulations.pdf",
+      "document_id": "prospectus-rules",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "16563 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 5/5; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: undergraduate-academic-rules-aug-2023.pdf (0.7222); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "a7e7f6896a59eb9413c9e8826e6c4c018ebe52045d10cebfcba92ded10a3174a",
+      "title": "Prospectus 2026 - Academic Rules and Regulations",
+      "source": "https://www.nu.edu.pk/Admissions/ProspectusUpload/Academic%20Rules%20and%20Regulations.pdf",
+      "doc_version": "2026",
+      "page_count": 5,
+      "superseded": false,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/prospectus-rules/a7e7f6896a59eb9413c9e8826e6c4c018ebe52045d10cebfcba92ded10a3174a/prospectus-2026-academic-rules-and-regulations.pdf",
+      "disposition": "active"
+    },
+    {
+      "file": "student-handbook-jun-2026.pdf",
+      "document_id": "student-handbook",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "59036 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 64/64; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-06"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: academic-rules-handbook-jun-2026.pdf (0.8777); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "717eb4b8d37e50185ffe952735c08ef19edd16074d547f10ebd22cf23da67c4d",
+      "title": "Student Handbook (Jun 2026)",
+      "source": "https://nu.edu.pk/public/downloads/Student_Handbook_2026.pdf",
+      "doc_version": "2026-06",
+      "page_count": 64,
+      "superseded": false,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/student-handbook/717eb4b8d37e50185ffe952735c08ef19edd16074d547f10ebd22cf23da67c4d/student-handbook-jun-2026.pdf",
+      "disposition": "active"
+    },
+    {
+      "file": "annual-report-2023-24.pdf",
+      "document_id": "annual-report",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "157756 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 85/85; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2023-24"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: student-handbook-jun-2026.pdf (0.7642); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "3c9d89e84af24df4b939f10e32c620a3877b276acea1db52f1aae4098e5c057a",
+      "title": "Annual Report 2023-24",
+      "source": "https://nu.edu.pk/public/downloads/AnnualReportForm/Annual%20Report%202023-24.pdf",
+      "doc_version": "2023-24",
+      "page_count": 85,
+      "superseded": false,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/annual-report/3c9d89e84af24df4b939f10e32c620a3877b276acea1db52f1aae4098e5c057a/annual-report-2023-24.pdf",
+      "disposition": "active"
+    },
+    {
+      "file": "prospectus-2026-fee-information.pdf",
+      "document_id": "fee-info",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "2281 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "newer verified version 2026-28; historical version 2026-27"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: prospectus-2026-academic-rules-and-regulations.pdf (0.7584); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "afb467e7087c5e3f271a70e6a2df42f42ea1f1d17081328dfd1eab0f498c3222",
+      "title": "Prospectus 2026 - Fee Information",
+      "source": "https://www.nu.edu.pk/Admissions/ProspectusUpload/Fee%20Information.pdf",
+      "doc_version": "2026-27",
+      "page_count": 1,
+      "superseded": false,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/fee-info/afb467e7087c5e3f271a70e6a2df42f42ea1f1d17081328dfd1eab0f498c3222/prospectus-2026-fee-information.pdf",
+      "disposition": "archive"
+    },
+    {
+      "file": "faculty-entrepreneurship-and-technical-start-ups-policy.pdf",
+      "document_id": "startup-policy",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "9374 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 8/8; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2022-05"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: academic-rules-handbook-jun-2026.pdf (0.7093); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "c2d5c7648d1593daf34d5c0596ede476e8984b0551830cc1690017e6e22f1359",
+      "title": "Faculty Entrepreneurship and Technical Start-ups Policy",
+      "source": "https://nu.edu.pk/OricResources/ResearchPolicies/27.pdf?20220530",
+      "doc_version": "2022-05",
+      "page_count": 8,
+      "superseded": false,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/startup-policy/c2d5c7648d1593daf34d5c0596ede476e8984b0551830cc1690017e6e22f1359/faculty-entrepreneurship-and-technical-start-ups-policy.pdf",
+      "disposition": "active"
+    },
+    {
+      "file": "b00-volunteering.md",
+      "document_id": "b00-volunteering",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "384 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-11"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: prospectus-2026-academic-rules-and-regulations.pdf (0.6042); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "c92aeba6631649de6318708b1b5ce63e648b8be5d7360237b01a2b9328c49a9d",
+      "title": "b00-volunteering",
+      "source": "synthetic://rahbar-assignment-03/b00-volunteering.md",
+      "doc_version": "2026-11",
+      "page_count": 1,
+      "min_words": 12,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/b00-volunteering/c92aeba6631649de6318708b1b5ce63e648b8be5d7360237b01a2b9328c49a9d/b00-volunteering.md",
+      "disposition": "active"
+    },
+    {
+      "file": "b01-exact-fees.pdf",
+      "document_id": "b01-exact-fees",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "2281 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "valid policy identity and version format"
+        },
+        "uniqueness": {
+          "pass": false,
+          "reason": "exact SHA-256 duplicate of prospectus-2026-fee-information.pdf"
+        }
+      },
+      "sha256": "afb467e7087c5e3f271a70e6a2df42f42ea1f1d17081328dfd1eab0f498c3222",
+      "quarantine": "quarantine/afb467e7087c5e3f-b01-exact-fees.pdf",
+      "disposition": "quarantine"
+    },
+    {
+      "file": "b02-exact-prospectus.pdf",
+      "document_id": "b02-exact-prospectus",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "16563 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 5/5; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "valid policy identity and version format"
+        },
+        "uniqueness": {
+          "pass": false,
+          "reason": "exact SHA-256 duplicate of prospectus-2026-academic-rules-and-regulations.pdf"
+        }
+      },
+      "sha256": "a7e7f6896a59eb9413c9e8826e6c4c018ebe52045d10cebfcba92ded10a3174a",
+      "quarantine": "quarantine/a7e7f6896a59eb94-b02-exact-prospectus.pdf",
+      "disposition": "quarantine"
+    },
+    {
+      "file": "b03-near-volunteering.md",
+      "document_id": "b03-near-volunteering",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "383 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "valid policy identity and version format"
+        },
+        "uniqueness": {
+          "pass": false,
+          "reason": "closest different policy: b00-volunteering.md (0.9986); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "6c6bcbb9e7959663c9e2e0b28c1dcb4996b1282caaeac995f9cf6cd37df5157c",
+      "quarantine": "quarantine/6c6bcbb9e7959663-b03-near-volunteering.md",
+      "disposition": "quarantine"
+    },
+    {
+      "file": "b04-corrupt.pdf",
+      "document_id": "b04-corrupt",
+      "checks": {
+        "quality": {
+          "pass": false,
+          "reason": "b04-corrupt.pdf: could not extract text: Unexpected EOF"
+        },
+        "completeness": {
+          "pass": false,
+          "reason": "missing fields: []; pages: 0/1; page, digest and length checks: False; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "valid policy identity and version format"
+        },
+        "uniqueness": {
+          "pass": false,
+          "reason": "no comparable verified text or metadata"
+        }
+      },
+      "sha256": "93233c4c7b421af9af3ccba6e6ca7f4487f006f89234b6e31f1247da8ebcff59",
+      "quarantine": "quarantine/93233c4c7b421af9-b04-corrupt.pdf",
+      "disposition": "quarantine"
+    },
+    {
+      "file": "b05-missing-title.md",
+      "document_id": "b05-missing-title",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "91 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": false,
+          "reason": "missing fields: ['title']; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "valid policy identity and version format"
+        },
+        "uniqueness": {
+          "pass": false,
+          "reason": "no comparable verified text or metadata"
+        }
+      },
+      "sha256": "b5fee88e1af8f540e23e5b10e4132526ed58a351f16f48977eda3693818ab614",
+      "quarantine": "quarantine/b5fee88e1af8f540-b05-missing-title.md",
+      "disposition": "quarantine"
+    },
+    {
+      "file": "b06-fee-addendum.md",
+      "document_id": "fee-info",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "265 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-28"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: undergraduate-academic-rules-aug-2023.pdf (0.6391); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "6b83b8c7fce706198e7122e8c2e75a3e321a1a00bfa9515b1c390c84d3e0eeba",
+      "title": "b06-fee-addendum",
+      "source": "synthetic://rahbar-assignment-03/b06-fee-addendum.md",
+      "doc_version": "2026-28",
+      "page_count": 1,
+      "min_words": 12,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/fee-info/6b83b8c7fce706198e7122e8c2e75a3e321a1a00bfa9515b1c390c84d3e0eeba/b06-fee-addendum.md",
+      "disposition": "active"
+    },
+    {
+      "file": "b07-guardrail.md",
+      "document_id": "b07-guardrail",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "201 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-11"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: b00-volunteering.md (0.6898); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "f10ae61d37c47ec12ee6b0f4fc9a520d152bdd3ac023f6783026da43dc86449d",
+      "title": "b07-guardrail",
+      "source": "synthetic://rahbar-assignment-03/b07-guardrail.md",
+      "doc_version": "2026-11",
+      "page_count": 1,
+      "min_words": 12,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/b07-guardrail/f10ae61d37c47ec12ee6b0f4fc9a520d152bdd3ac023f6783026da43dc86449d/b07-guardrail.md",
+      "disposition": "active"
+    },
+    {
+      "file": "b08-robotics.md",
+      "document_id": "b08-robotics",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "165 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-11"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: b00-volunteering.md (0.7266); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "92d56f1ddfe6da949a0e8c45db128f7b76d9cab512ba3c02e52970a30f103091",
+      "title": "b08-robotics",
+      "source": "synthetic://rahbar-assignment-03/b08-robotics.md",
+      "doc_version": "2026-11",
+      "page_count": 1,
+      "min_words": 12,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/b08-robotics/92d56f1ddfe6da949a0e8c45db128f7b76d9cab512ba3c02e52970a30f103091/b08-robotics.md",
+      "disposition": "active"
+    },
+    {
+      "file": "b09-debate.md",
+      "document_id": "b09-debate",
+      "checks": {
+        "quality": {
+          "pass": true,
+          "reason": "141 letters; replacement characters: 0"
+        },
+        "completeness": {
+          "pass": true,
+          "reason": "missing fields: []; pages: 1/1; page, digest and length checks: True; safe identity: True"
+        },
+        "recency": {
+          "pass": true,
+          "reason": "latest verified version 2026-11"
+        },
+        "uniqueness": {
+          "pass": true,
+          "reason": "closest different policy: b08-robotics.md (0.6372); near-duplicate threshold 0.97"
+        }
+      },
+      "sha256": "035b12330e27765b055949971371dd8f5b20bb6d922f6bab8499ad0c2bd1891d",
+      "title": "b09-debate",
+      "source": "synthetic://rahbar-assignment-03/b09-debate.md",
+      "doc_version": "2026-11",
+      "page_count": 1,
+      "min_words": 12,
+      "signature_model": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "stored": "documents/b09-debate/035b12330e27765b055949971371dd8f5b20bb6d922f6bab8499ad0c2bd1891d/b09-debate.md",
+      "disposition": "active"
+    }
+  ]
+}
