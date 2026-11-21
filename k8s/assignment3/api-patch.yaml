@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      track: live
+  template:
+    metadata:
+      labels:
+        track: live
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: api
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 384Mi}
+          env:
+            - name: CHROMA_COLLECTION
+              value: rahbar-a3-baseline
+          volumeMounts:
+            - name: traces
+              mountPath: /traces
+      volumes:
+        - name: traces
+          persistentVolumeClaim:
+            claimName: ragops-traces

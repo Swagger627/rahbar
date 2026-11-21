@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reindex
+spec:
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          securityContext:
+            fsGroup: 10001
+          containers:
+            - name: indexer
+              resources:
+                requests: {cpu: 500m, memory: 1280Mi}
+                limits: {cpu: '1', memory: 2Gi}
+              volumeMounts:
+                - name: corpus
+                  mountPath: /corpus
+                  readOnly: false
+                - name: results
+                  mountPath: /results
+          volumes:
+            - name: corpus
+              persistentVolumeClaim:
+                claimName: corpus
+                readOnly: false
+            - name: results
+              persistentVolumeClaim:
+                claimName: ragops-results
