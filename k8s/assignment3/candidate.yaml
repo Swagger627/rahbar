@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-candidate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+      track: candidate
+  template:
+    metadata:
+      labels:
+        app: api
+        track: candidate
+    spec:
+      serviceAccountName: api
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: rahbar-api:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          env:
+            - name: CHROMA_COLLECTION
+              value: rahbar-a3-candidate
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: traces
+              mountPath: /traces
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: traces
+          persistentVolumeClaim:
+            claimName: ragops-traces
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-candidate
+spec:
+  selector:
+    app: api
+    track: candidate
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

@@ -1,0 +1,4 @@
+Live deployment revision before: 5
+$ bash scripts/ragops-k8s.sh promote eval/results/components-observe-20261121T060122Z-bbc507d3.json
+candidate gate did not pass a full two-run suite
+Live deployment revision after:  5
