@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ragops-artifacts
+  namespace: rahbar-a3
+spec:
+  restartPolicy: Never
+  serviceAccountName: ragops-eval
+  automountServiceAccountToken: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: files
+      image: rahbar-indexer:a3
+      imagePullPolicy: IfNotPresent
+      command: ["sleep", "86400"]
+      resources:
+        requests: {cpu: 5m, memory: 16Mi}
+        limits: {cpu: 200m, memory: 128Mi}
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+      volumeMounts:
+        - {name: corpus, mountPath: /corpus}
+        - {name: results, mountPath: /results, readOnly: true}
+        - {name: traces, mountPath: /traces, readOnly: true}
+  volumes:
+    - name: corpus
+      persistentVolumeClaim:
+        claimName: corpus
+    - name: results
+      persistentVolumeClaim:
+        claimName: ragops-results
+        readOnly: true
+    - name: traces
+      persistentVolumeClaim:
+        claimName: ragops-traces
+        readOnly: true
