@@ -33,6 +33,8 @@ class Chunk:
     doc_version: str
     superseded: bool
 
+    pages: tuple[int, ...] = ()
+
     def metadata(self) -> dict[str, str | int | bool]:
         """Chroma metadata values must be str, int, float or bool."""
         return {
