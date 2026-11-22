@@ -261,6 +261,11 @@ a release gate, and coverage checks. The **Assignment 03 overlay** runs in `rahb
 See [the audit and acceptance plan](docs/ASSIGNMENT-03-PLAN.md) and
 [the fresh-cluster instructions](k8s/README.md).
 
+**Status check:** `python3 scripts/check_a3_readiness.py` marks every handout item `OK` or
+`TODO` from the committed evidence. [docs/ASSIGNMENT-03-FINISH.md](docs/ASSIGNMENT-03-FINISH.md)
+gives the remaining runs in the order that keeps results comparable. The gate thresholds
+and the coverage cutoff are justified in [docs/ASSIGNMENT-03-THRESHOLDS.md](docs/ASSIGNMENT-03-THRESHOLDS.md).
+
 Run from the repository root with Bash. The examples use minikube context `rahbar`.
 Use `RAGOPS_CONTEXT` to select another profile for the helper script.
 
@@ -376,13 +381,17 @@ the share falls below the configured target.
 
 ```bash
 bash scripts/ragops-k8s.sh status
+kubectl --context rahbar -n rahbar-a3 delete job ragops-eval --ignore-not-found   # a completed Job does not rerun
 kubectl --context rahbar -n rahbar-a3 apply -f k8s/eval-job.yaml
 kubectl --context rahbar -n rahbar-a3 logs job/ragops-eval -f
 kubectl --context rahbar -n rahbar-a3 top pods --containers
 ```
 
-The fixed-name evaluation manifest defaults to the baseline Service. The helper creates a
-uniquely named Job for repeated runs. See [Kubernetes setup and controlled rollout](k8s/README.md)
+The fixed-name evaluation manifest runs the full suite against the **candidate** Service
+(`api-candidate`) in `candidate` phase. It compares the candidate with the recorded baseline
+(`/results/a3-baseline.json`, written by `eval baseline api`), writes its result file to the
+results PVC, and the Job ends `Failed` when the release gate fails. The target is set in the
+`ragops-eval-target` ConfigMap. The helper creates a uniquely named Job for repeated runs. See [Kubernetes setup and controlled rollout](k8s/README.md)
 for loading images, exporting PVC evidence, and rehearsing the demo.
 
 ### G · Render the report and prepare the appendix

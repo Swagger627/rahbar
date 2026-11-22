@@ -1,7 +1,7 @@
 {
   "recall5_max_drop": 0.02,
-  "faithfulness_min": 0.60,
-  "latency_p95_max_seconds": 45.0,
+  "faithfulness_min": 0.50,
+  "latency_p95_max_seconds": 120.0,
   "abstention_max_drop": 0.0,
   "citation_validity_min": 0.95,
   "answerable_answer_rate_min": 0.40

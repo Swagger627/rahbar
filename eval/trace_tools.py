@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import time
@@ -53,9 +54,24 @@ class TraceReader:
     def prompt(self, trace_id: str) -> dict[str, Any]:
         query = self.get(trace_id)
         source = self.get(query["original_trace_id"]) if query.get("original_trace_id") else query
+        attempts = source["generation_attempts"]
+        # Recompute each prompt's digest from the stored messages. A match proves the printed
+        # prompt is byte-for-byte the one sent to the model (traces before the digest: None).
+        checks = [attempt.get("prompt_sha256") == prompt_digest(attempt["messages"])
+                  if attempt.get("prompt_sha256") else None for attempt in attempts]
         return {"trace_id": trace_id, "cache": query["cache"], "source_trace_id": source["trace_id"],
-                "context": source["context"], "generation_attempts": source["generation_attempts"],
+                "collection": source.get("collection"),
+                "collection_version": source.get("collection_version"),
+                "embedding_version": source.get("embedding_version"),
+                "prompt_sha256": source.get("prompt_sha256"), "prompt_digest_verified": checks,
+                "context": source["context"], "generation_attempts": attempts,
                 "outcome": source.get("outcome")}
+
+
+def prompt_digest(messages: list[dict[str, str]]) -> str:
+    """Same canonical form as api/app/trace.py prompt_digest."""
+    canonical = json.dumps(messages, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:

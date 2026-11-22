@@ -228,38 +228,135 @@ def ingestion_milestones() -> list[list[Any]]:
     return rows
 
 
+def level_disagreement(control: dict[str, Any], base: dict[str, Any], drift: dict[str, Any]) -> str:
+    """Q(b): cases where a lower level looked fine but a higher level did not, from the runs."""
+    parts = []
+    first = control.get("runs", [{}])[0].get("questions", [])
+    perfect = [q for q in first if q.get("retrieval", {}).get("recall@5", 0) >= 0.999]
+    failed = [q["id"] for q in perfect if not q["answer"]["answered_from_context"]
+              or q.get("judge", {}).get("supported") is False]
+    if perfect and failed:
+        fees = [q["id"] for q in perfect if q["id"] in failed
+                and any(r["document_id"] == "fee-info" for r in q["golden"]["relevant"])]
+        parts.append(f"Component fine, end-to-end not: {len(failed)} of {len(perfect)} questions with "
+                     f"recall@5 = 1.0 in run one were still abstained or judged unsupported "
+                     f"({', '.join(failed[:6])}). Ranking the right page first does not guarantee the "
+                     "model receives it and reads it correctly."
+                     + (f" {len(fees)} of them are fee-schedule questions whose short table-row chunks "
+                        "fall under the relevance floor or are misread." if fees else ""))
+    if base.get("cosine_gap") is not None and drift.get("recall@5") is not None:
+        parts.append(f"Module fine, component not: after Batch B the embedding cosine gap was unchanged "
+                     f"({drift['cosine_gap']:.3f}) while recall@5 fell from {base['recall@5']:.3f} to "
+                     f"{drift['recall@5']:.3f}, because the newer fee version replaced the labelled one.")
+    return " ".join(parts) or "Compare the levels after the exported evaluation completes."
+
+
+def judge_doubt(control: dict[str, Any]) -> str:
+    """Q(d): faithfulness, with a judged-unsupported answer whose figure is verbatim in the context."""
+    import re
+
+    text = ("Faithfulness. It is judged by llama3.2:3b, the same small model family that answers, "
+            "with no calibration except our hand labels.")
+    for question in control.get("runs", [{}])[0].get("questions", []):
+        judge = question.get("judge") or {}
+        figures = re.findall(r"\d[\d,]*", question.get("answer", {}).get("answer", ""))
+        context = " ".join(passage["text"] for passage in question.get("context", []))
+        verbatim = all(re.search(rf"(?<![\d,.]){re.escape(f)}(?![\d,])", context) for f in figures)
+        if judge.get("supported") is False and figures and verbatim:
+            text += (f" In {question['id']} the answer \"{question['answer']['answer'][:60]}\" states "
+                     f"{', '.join(figures)}, which appears in the retrieved passage, yet the judge said "
+                     f"\"{judge.get('reason')}\". Such misses mean the reported faithfulness may be "
+                     "an underestimate.")
+            break
+    for question in control.get("runs", [{}])[0].get("questions", []):
+        judge = question.get("judge") or {}
+        expected = re.findall(r"\d[\d,.]*\d|\d", question["golden"].get("expected", ""))
+        given = re.findall(r"\d[\d,.]*\d|\d", question.get("answer", {}).get("answer", ""))
+        if judge.get("supported") is True and expected and given and not set(expected) & set(given):
+            text += (f" It also errs the other way: in {question['id']} it accepted "
+                     f"\"{question['answer']['answer'][:40]}\" although the labelled answer is "
+                     f"\"{question['golden']['expected']}\"."
+                     + (" Our extraction of the grade table puts two columns on one line, and both the "
+                        "model and the judge misread it." if question["golden"].get("topic") == "grades" else ""))
+            break
+    return text + " The agreement figure below says how far to trust it."
+
+
 def result_file(run: dict[str, Any]) -> str:
     return run.get("_file", "Pending cluster result")
 
 
-def diagnosis(baseline: dict[str, Any]) -> list[str]:
-    targets = {q["trace_id"] for trial in baseline.get("runs", []) for q in trial["questions"]
-               if q.get("trace_id") and q.get("outcome") == "abstained"
-               and not q["golden"]["must_abstain"]}
-    answerable = {row["question"] for line in (ROOT / "eval/golden.jsonl").read_text().splitlines()
-                  if (row := json.loads(line)) and not row["must_abstain"]}
-    observed = []
+def load_traces() -> dict[str, dict[str, Any]]:
+    traces: dict[str, dict[str, Any]] = {}
     for file in sorted(TRACES.glob("*.jsonl")):
         for line in file.read_text().splitlines():
-            trace = json.loads(line)
-            qualifies = trace.get("trace_id") in targets or (
-                trace.get("evaluation") and not trace.get("retrieval_only")
-                and trace.get("query") in answerable and trace.get("answered_from_context") is False)
-            if qualifies and trace["retrieved"]:
-                observed.append(trace)
-    if not observed:
+            if line.strip() and (row := json.loads(line)).get("event") == "rag_query":
+                traces[row["trace_id"]] = row
+    return traces
+
+
+def evidence_rank(trace: dict[str, Any], relevant: list[dict[str, Any]]) -> tuple[int, dict[str, Any]] | None:
+    """The first retrieved chunk that holds a golden (document, version, page), with its rank."""
+    wanted = {(ref["document_id"], ref["doc_version"], ref["page"]) for ref in relevant}
+    for rank, hit in enumerate(trace["retrieved"], start=1):
+        pages = hit.get("pages") or [hit.get("page")]
+        if any((hit.get("document_id"), hit.get("doc_version"), page) in wanted for page in pages):
+            return rank, hit
+    return None
+
+
+def diagnosis(baseline: dict[str, Any]) -> list[str]:
+    """D5: diagnose one abstained answerable question from its trace alone, and name the cause."""
+    traces = load_traces()
+    candidates = []
+    for trial in baseline.get("runs", []):
+        for question in trial["questions"]:
+            trace = traces.get(question.get("trace_id", ""))
+            if (trace is None or question["golden"]["must_abstain"]
+                    or trace.get("answered_from_context") is not False or not trace["retrieved"]):
+                continue
+            found = evidence_rank(trace, question["golden"]["relevant"])
+            dropped = {a["chunk_id"]: a for a in trace["guardrail_actions"]
+                       if a["action"] == "drop_below_relevance"}
+            # Prefer a case the trace explains completely: the evidence was retrieved, then filtered.
+            priority = 0 if found and found[1]["chunk_id"] in dropped else 1 if found else 2
+            candidates.append((priority, trace["outcome"] == "fallback", question["id"], trace, found, dropped))
+    if not candidates:
         return ["Trace-only diagnosis pending an exported eligible evaluation trace."]
-    trace = min(observed, key=lambda row: row["outcome"] == "fallback")
-    hit = trace["retrieved"][0]
-    drops = dict(Counter(action["action"] for action in trace["guardrail_actions"]))
-    return [
-        f"Trace {trace['trace_id']} recorded the query {trace['query']}",
-        f"Collection {trace['collection']} revision {trace['collection_version']} applied {trace['filters']}.",
-        f"Rank 1 was {hit['chunk_id']} ({hit['document_id']} v{hit['doc_version']}) at {hit['score']:.3f}.",
-        f"The guardrails recorded {drops} and delivered {len(trace['context'])} passages to the model.",
-        f"The outcome was {trace['outcome']} with {len(trace['generation_attempts'])} model attempts. "
-        f"The trace records {trace.get('outcome_reason', 'no reason')}.",
+    _, _, qid, trace, found, dropped = min(candidates, key=lambda row: row[:3])
+    kept = ", ".join(f"{c['document_id']} p{c['page']} ({c['section']})" for c in trace["context"]) or "none"
+    lines = [
+        f"1. Question {qid}, trace {trace['trace_id']}: \"{trace['query']}\" ended as {trace['outcome']} "
+        f"({trace.get('outcome_reason') or 'no reason recorded'}).",
+        f"2. It read collection {trace['collection']} revision {trace['collection_version']} with filter "
+        f"{trace['filters']} and relevance floor {trace.get('relevance_floor')}.",
     ]
+    if found:
+        rank, hit = found
+        lines.append(f"3. The golden evidence was retrieved: rank {rank}, chunk {hit['chunk_id']} "
+                     f"({hit['document_id']} v{hit['doc_version']} p{hit['page']}, \"{hit['section']}\"), "
+                     f"cosine {hit['score']:.3f}. The version was current, so the version filter is not the cause.")
+    else:
+        lines.append("3. No retrieved chunk holds the golden document version and page: retrieval missed it.")
+    if found and found[1]["chunk_id"] in dropped:
+        short = found[1]["document_id"] == "fee-info"
+        lines += [
+            f"4. The guardrail log shows drop_below_relevance for that chunk ({found[1]['score']:.3f} < "
+            f"{trace.get('relevance_floor')}). The model saw {len(trace['context'])} passage(s): {kept}.",
+            "5. Root cause: the relevance-floor filter, not retrieval or versioning. The model abstained "
+            "correctly on what it was given. "
+            + ("Short table-row fee chunks score below the floor. " if short else "")
+            + "A lower floor, or a rule that keeps a chunk matching the question's key term, would fix "
+            "it; either change must pass the Part B gate.",
+        ]
+    else:
+        lines += [
+            f"4. Guardrail actions: {dict(Counter(a['action'] for a in trace['guardrail_actions']))}. "
+            f"The model saw {len(trace['context'])} passage(s): {kept}.",
+            "5. Root cause: " + ("the generator declined despite relevant context; inspect the prompt with "
+                                  "trace_tools.py prompt." if found else "a retrieval miss for this wording."),
+        ]
+    return lines
 
 
 def render(out: Path, appendix: Path | None, student: str, second: str, reviews: Path | None) -> None:
@@ -396,6 +493,14 @@ def render(out: Path, appendix: Path | None, student: str, second: str, reviews:
              cand_metrics.get(name), drift_metrics.get(name)]
             for group, name in metrics
         ], [66, 148, 72, 78, 72, 71]),
+        para("Gate thresholds", "ReportSub"),
+        para(f"recall@5 may drop at most {thresholds['recall5_max_drop']:.2f} (less than one lost question); "
+             f"abstention may drop {thresholds['abstention_max_drop']:.2f}; faithfulness at least "
+             f"{thresholds['faithfulness_min']:.2f} (baseline mean less 1.5 times its repeat spread); p95 at most "
+             f"{thresholds['latency_p95_max_seconds']:.0f} s (the API's own generation timeout); citation "
+             f"validity at least {thresholds['citation_validity_min']:.2f}; answer rate at least "
+             f"{thresholds['answerable_answer_rate_min']:.2f}. All were fixed from the baseline before any "
+             "candidate run. Derivation: docs/ASSIGNMENT-03-THRESHOLDS.md."),
         para("Inputs", "ReportSub"),
         para(f"Baseline: {result_file(control)}. Candidate: {result_file(experiment)}. "
              f"Drift: {result_file(drift_results)}. Component-only checkpoints cover embedding and retrieval."),
@@ -500,18 +605,16 @@ def render(out: Path, appendix: Path | None, student: str, second: str, reviews:
              "retrieval guardrail. A document-level content check could detect instruction-like text before indexing."
              if batch_b else "Batch B verification evidence is pending."),
         para("Where did levels disagree?", "ReportSub"),
-        para(f"The baseline embedding cosine gap was {base_metrics['cosine_gap']:.3f}, while recall@5 "
-             f"was {base_metrics['recall@5']:.3f}. A useful average semantic gap does not guarantee that "
-             "the right version and page were ranked in the first five chunks."
-             if base_metrics.get("cosine_gap") is not None and base_metrics.get("recall@5") is not None
-             else "Compare the embedding gap and ranked retrieval after the exported evaluation completes."),
-        para("What does archival preserve?", "ReportSub"),
-        para("Archival preserves the exact verified bytes, identity, version and metadata. Removing them "
-             "would break restore and make old evidence harder to audit."),
+        para(level_disagreement(control, base_metrics, drift_metrics)),
+        para("Did we archive or delete old versions?", "ReportSub"),
+        para("We archive and never delete. A superseded edition keeps its verified bytes under "
+             "lake/archive and its chunks stay in Chroma with superseded=true, so the normal query filter "
+             "excludes them. The restore run switched the fee schedule back without embedding a chunk. "
+             "Deleting instead would break three things: rollback (--restore needs the archived bytes), "
+             "questions about the old rule (the history filter reads superseded chunks), and audit "
+             "(an old trace names chunk ids and versions that would no longer exist)."),
         para("Which metric is least trustworthy?", "ReportSub"),
-        para("Faithfulness is judged by a small language model from the same runtime family. It can miss "
-             "a numeric qualifier or accept an unsupported inference. Agreement requires at least eight "
-             "independent student labels tied to actual trace IDs."),
+        para(judge_doubt(control)),
         para("Which idea took most adaptation?", "ReportSub"),
         para("A reportable example needed document versions to flow through Chroma, API responses and "
              "exact prompts. This deployment uses a PVC data lake and a local candidate Service, "
@@ -532,7 +635,8 @@ def render(out: Path, appendix: Path | None, student: str, second: str, reviews:
                 if agreement.get("agreement") is not None else
                 "Agreement awaits actual student answer labels.")),
         para("AI assistance", "ReportSub"),
-        para("Codex assisted with implementation, synthetic evaluation fixtures, tests and report assembly. "
+        para("Codex and Claude Code assisted with implementation, synthetic evaluation fixtures, tests, "
+             "the requirements audit and report assembly. "
              "The report uses exported measurements from the local minikube pipeline. "
              "Student authorship, manual labels and identity details await confirmation."),
     ])

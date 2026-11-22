@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import threading
@@ -24,6 +25,7 @@ def start(settings: Settings, trace_id: str, request_id: str, question: str) -> 
         "embedding_model": settings.embed_model, "embedding_version": settings.embed_model,
         "collection": settings.collection, "collection_version": None, "retrieved": [],
         "filters": [], "reranked_order": [], "context": [], "generation_attempts": [],
+        "prompt_sha256": None,
         "model": settings.llm_model, "model_parameters": {"temperature": settings.temperature,
                                                           "seed": settings.seed},
         "response": None, "citations": [], "guardrail_actions": [],
@@ -47,9 +49,18 @@ def action(**fields: Any) -> None:
         trace["guardrail_actions"].append(fields)
 
 
+def prompt_digest(messages: list[dict[str, str]]) -> str:
+    """SHA-256 of the exact messages sent to the model, in a canonical JSON form."""
+    canonical = json.dumps(messages, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def prompt(messages: list[dict[str, str]], parameters: dict[str, Any]) -> None:
     if (trace := current.get()) is not None:
-        trace["generation_attempts"].append({"messages": messages, "parameters": parameters})
+        digest = prompt_digest(messages)
+        trace["generation_attempts"].append({"messages": messages, "parameters": parameters,
+                                             "prompt_sha256": digest})
+        trace["prompt_sha256"] = digest   # the prompt that produced the final reply
 
 
 def publish(trace: dict[str, Any], directory: str) -> None:

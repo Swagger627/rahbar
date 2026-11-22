@@ -39,3 +39,31 @@ def test_threshold_edit_can_fail_identical_metrics() -> None:
     assert decision(metrics, metrics, {**thresholds, "latency_p95_max_seconds": 1})
     assert decision({**metrics, "pipeline_errors": 1}, metrics, thresholds)
     assert decision({**metrics, "faithfulness": None}, metrics, thresholds)
+
+
+def test_prompt_replay_verifies_digest_and_detects_tampering(tmp_path: Path) -> None:
+    import json
+
+    from trace_tools import TraceReader, prompt_digest
+
+    messages = [{"role": "system", "content": "rules"}, {"role": "user", "content": "q"}]
+    record = {"event": "rag_query", "trace_id": "t1", "cache": "off", "context": [],
+              "outcome": "answered", "prompt_sha256": prompt_digest(messages),
+              "generation_attempts": [{"messages": messages, "parameters": {},
+                                       "prompt_sha256": prompt_digest(messages)}]}
+    tampered = {**record, "trace_id": "t2", "generation_attempts": [
+        {"messages": [{"role": "user", "content": "changed"}], "parameters": {},
+         "prompt_sha256": prompt_digest(messages)}]}
+    (tmp_path / "pod.jsonl").write_text(json.dumps(record) + "\n" + json.dumps(tampered) + "\n")
+    reader = TraceReader(tmp_path)
+    assert reader.prompt("t1")["prompt_digest_verified"] == [True]
+    assert reader.prompt("t2")["prompt_digest_verified"] == [False]
+
+
+def test_api_and_trace_tool_share_one_prompt_digest() -> None:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "api"))
+    from app.trace import prompt_digest as api_digest
+    from trace_tools import prompt_digest
+
+    messages = [{"role": "user", "content": "Ünïcode — clause 1.21"}]
+    assert api_digest(messages) == prompt_digest(messages)
